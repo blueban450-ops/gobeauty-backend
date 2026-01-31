@@ -1,0 +1,29 @@
+name: Mobile App CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./mobile
+      - name: Run ESLint
+        run: npx eslint 'app/**/*.{js,ts,tsx}' --max-warnings=0
+        working-directory: ./mobile
+      - name: Run Prettier check
+        run: npx prettier --check 'app/**/*.{js,ts,tsx,json,css,md}'
+        working-directory: ./mobile
+      # - name: Run tests (if you add tests)
+      #   run: npm test
+      #   working-directory: ./mobile

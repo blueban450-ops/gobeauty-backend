@@ -1,0 +1,2557 @@
+// GoBeauty Shared Database - Complete with Chat & Notifications
+const DB = {
+  // Initialize with default data if empty
+  init: () => {
+    // Always ensure arrays exist
+    if (!localStorage.getItem('gb_users') || localStorage.getItem('gb_users') === '[]') {
+      localStorage.setItem('gb_users', JSON.stringify([
+        {id:'admin_1',email:'admin@gobeauty.com',password:'admin123',name:'Admin',role:'admin',status:'active',createdAt:new Date().toISOString()}
+      ]));
+    }
+    
+    // Check if admin exists, if not add it
+    const users = JSON.parse(localStorage.getItem('gb_users') || '[]');
+    if (!users.find(u => u.role === 'admin')) {
+      users.push({id:'admin_1',email:'admin@gobeauty.com',password:'admin123',name:'Admin',role:'admin',status:'active',createdAt:new Date().toISOString()});
+      localStorage.setItem('gb_users', JSON.stringify(users));
+    }
+
+    if (!localStorage.getItem('gb_categories')) {
+      localStorage.setItem('gb_categories', JSON.stringify([
+        {id:'cat_1',name:'Spa & Massage',icon:'spa',status:'active'},
+        {id:'cat_2',name:'Nails & Manicure',icon:'hand-sparkles',status:'active'},
+        {id:'cat_3',name:'Hairstyle',icon:'scissors',status:'active'},
+        {id:'cat_4',name:'Make-up',icon:'wand-magic-sparkles',status:'active'},
+        {id:'cat_5',name:'Facial Care',icon:'face-smile-beam',status:'active'},
+        {id:'cat_6',name:'Waxing',icon:'user-nurse',status:'active'}
+      ]));
+    }
+
+    if (!localStorage.getItem('gb_services')) {
+      localStorage.setItem('gb_services', JSON.stringify([
+        {id:'srv_1',name:'Relaxing Massage',categoryId:'cat_1',basePrice:80,duration:60},
+        {id:'srv_2',name:'Deep Tissue Massage',categoryId:'cat_1',basePrice:95,duration:60},
+        {id:'srv_3',name:'Hammam',categoryId:'cat_1',basePrice:120,duration:90},
+        {id:'srv_4',name:'Classic Manicure',categoryId:'cat_2',basePrice:35,duration:30},
+        {id:'srv_5',name:'Gel Manicure',categoryId:'cat_2',basePrice:55,duration:45},
+        {id:'srv_6',name:'Spa Pedicure',categoryId:'cat_2',basePrice:45,duration:40},
+        {id:'srv_7',name:'Women Haircut',categoryId:'cat_3',basePrice:45,duration:45},
+        {id:'srv_8',name:'Men Haircut',categoryId:'cat_3',basePrice:25,duration:30},
+        {id:'srv_9',name:'Hair Coloring',categoryId:'cat_3',basePrice:85,duration:90},
+        {id:'srv_10',name:'Balayage',categoryId:'cat_3',basePrice:120,duration:120},
+        {id:'srv_11',name:'Day Makeup',categoryId:'cat_4',basePrice:60,duration:45},
+        {id:'srv_12',name:'Bridal Makeup',categoryId:'cat_4',basePrice:200,duration:90},
+        {id:'srv_13',name:'Hydrating Facial',categoryId:'cat_5',basePrice:70,duration:60},
+        {id:'srv_14',name:'Anti-Aging Facial',categoryId:'cat_5',basePrice:95,duration:75},
+        {id:'srv_15',name:'Full Leg Waxing',categoryId:'cat_6',basePrice:40,duration:30},
+        {id:'srv_16',name:'Bikini Waxing',categoryId:'cat_6',basePrice:30,duration:20}
+      ]));
+    }
+
+    if (!localStorage.getItem('gb_locations')) {
+      localStorage.setItem('gb_locations', JSON.stringify({
+        regions: [
+          {id:'idf',name:'Île-de-France',cities:[
+            {id:'paris',name:'Paris',areas:['1st Arr.','2nd Arr.','3rd Arr.','4th Arr.','Le Marais','Montmartre','Champs-Élysées'],lat:48.8566,lng:2.3522},
+            {id:'versailles',name:'Versailles',areas:['Center','Castle Area'],lat:48.8014,lng:2.1301}
+          ]},
+          {id:'paca',name:'Provence-Alpes-Côte d\'Azur',cities:[
+            {id:'marseille',name:'Marseille',areas:['Old Port','La Canebière','Prado'],lat:43.2965,lng:5.3698},
+            {id:'nice',name:'Nice',areas:['Promenade des Anglais','Old Nice','Port'],lat:43.7102,lng:7.2620},
+            {id:'cannes',name:'Cannes',areas:['La Croisette','Center'],lat:43.5528,lng:7.0174}
+          ]},
+          {id:'aura',name:'Auvergne-Rhône-Alpes',cities:[
+            {id:'lyon',name:'Lyon',areas:['Presqu\'île','Old Lyon','Bellecour'],lat:45.7640,lng:4.8357}
+          ]},
+          {id:'pak',name:'Pakistan',cities:[
+            {id:'islamabad',name:'Islamabad',areas:['F-6','F-7','F-8','F-10','F-11','G-6','G-7','G-8','G-9','G-10','G-11','Blue Area','Bahria Town'],lat:33.6844,lng:73.0479},
+            {id:'lahore',name:'Lahore',areas:['Gulberg','DHA','Model Town','Johar Town','Bahria Town'],lat:31.5204,lng:74.3587},
+            {id:'karachi',name:'Karachi',areas:['Clifton','DHA','Gulshan','PECHS','Saddar'],lat:24.8607,lng:67.0011}
+          ]}
+        ]
+      }));
+    }
+
+    // Initialize empty arrays if not exist
+    if (!localStorage.getItem('gb_providers')) localStorage.setItem('gb_providers', JSON.stringify([
+      // Sample providers with accurate locations
+      {id:'prov_1',userId:'user_pro1',businessName:'Glamour Studio Paris',ownerName:'Marie Dupont',email:'glamour@demo.com',phone:'+33 1 23 45 67 89',categoryId:'cat_1',address:'45 Rue du Faubourg Saint-Honoré, 75008 Paris',lat:48.8704,lng:2.3151,image:'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400',coverImage:'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800',rating:4.8,reviewCount:124,verified:true,featured:true,topRated:true,homeService:true,status:'approved',createdAt:'2024-01-15'},
+      {id:'prov_2',userId:'user_pro2',businessName:'Elite Spa & Wellness',ownerName:'Jean Martin',email:'elite@demo.com',phone:'+33 1 98 76 54 32',categoryId:'cat_2',address:'12 Avenue des Champs-Élysées, 75008 Paris',lat:48.8698,lng:2.3075,image:'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400',coverImage:'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800',rating:4.9,reviewCount:89,verified:true,featured:true,topRated:true,homeService:false,status:'approved',createdAt:'2024-02-20'},
+      {id:'prov_3',userId:'user_pro3',businessName:'Nails & Beauty Lounge',ownerName:'Sophie Bernard',email:'nails@demo.com',phone:'+33 1 45 67 89 01',categoryId:'cat_1',address:'78 Rue de Rivoli, 75004 Paris',lat:48.8566,lng:2.3522,image:'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400',coverImage:'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=800',rating:4.6,reviewCount:56,verified:true,featured:false,topRated:false,homeService:true,status:'approved',createdAt:'2024-03-10'},
+      {id:'prov_4',userId:'user_pro4',businessName:'Hair Masters',ownerName:'Claire Petit',email:'hair@demo.com',phone:'+33 1 23 45 67 00',categoryId:'cat_3',address:'25 Boulevard Haussmann, 75009 Paris',lat:48.8737,lng:2.3316,image:'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=400',coverImage:'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800',rating:4.7,reviewCount:203,verified:true,featured:true,topRated:true,homeService:false,status:'approved',createdAt:'2024-01-05'},
+      {id:'prov_5',userId:'user_pro5',businessName:'Makeup by Chloe',ownerName:'Chloe Moreau',email:'makeup@demo.com',phone:'+33 1 11 22 33 44',categoryId:'cat_4',address:'5 Place Vendôme, 75001 Paris',lat:48.8675,lng:2.3296,image:'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400',coverImage:'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800',rating:4.5,reviewCount:78,verified:false,featured:false,topRated:false,homeService:true,status:'approved',createdAt:'2024-04-01'},
+      {id:'prov_6',userId:'user_pro6',businessName:'Zen Facial Clinic',ownerName:'Emma Laurent',email:'zen@demo.com',phone:'+33 1 55 66 77 88',categoryId:'cat_5',address:'33 Rue de la Paix, 75002 Paris',lat:48.8690,lng:2.3310,image:'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400',coverImage:'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=800',rating:4.9,reviewCount:167,verified:true,featured:true,topRated:true,homeService:false,status:'approved',createdAt:'2024-02-14'},
+      {id:'prov_7',userId:'user_pro7',businessName:'Wax Studio',ownerName:'Luc Girard',email:'wax@demo.com',phone:'+33 1 99 88 77 66',categoryId:'cat_6',address:'89 Rue Saint-Lazare, 75009 Paris',lat:48.8768,lng:2.3288,image:'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400',coverImage:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',rating:4.4,reviewCount:45,verified:true,featured:false,topRated:false,homeService:true,status:'approved',createdAt:'2024-03-25'},
+      {id:'prov_8',userId:'user_pro8',businessName:'Lyon Beauty Center',ownerName:'Marc Blanc',email:'lyon@demo.com',phone:'+33 4 78 12 34 56',categoryId:'cat_1',address:'15 Place Bellecour, 69002 Lyon',lat:45.7578,lng:4.8320,image:'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400',coverImage:'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800',rating:4.6,reviewCount:92,verified:true,featured:true,topRated:false,homeService:true,status:'approved',createdAt:'2024-01-20'}
+    ]));
+    if (!localStorage.getItem('gb_bookings')) localStorage.setItem('gb_bookings', JSON.stringify([]));
+    if (!localStorage.getItem('gb_favorites')) localStorage.setItem('gb_favorites', JSON.stringify([]));
+    if (!localStorage.getItem('gb_chats')) localStorage.setItem('gb_chats', JSON.stringify([]));
+    if (!localStorage.getItem('gb_messages')) localStorage.setItem('gb_messages', JSON.stringify([]));
+    if (!localStorage.getItem('gb_notifications')) localStorage.setItem('gb_notifications', JSON.stringify([]));
+    if (!localStorage.getItem('gb_reviews')) localStorage.setItem('gb_reviews', JSON.stringify([
+      {id:'rev_1',providerId:'prov_1',userId:'user_1',rating:5,text:'Amazing experience! The staff was so professional.',createdAt:'2024-06-15',helpful:12},
+      {id:'rev_2',providerId:'prov_1',userId:'user_2',rating:4,text:'Great service, will come again.',createdAt:'2024-06-20',helpful:5},
+      {id:'rev_3',providerId:'prov_2',userId:'user_1',rating:5,text:'Best spa in Paris! Highly recommend.',createdAt:'2024-07-01',helpful:23},
+      {id:'rev_4',providerId:'prov_4',userId:'user_3',rating:5,text:'My hair looks fantastic! Thank you!',createdAt:'2024-07-10',helpful:8}
+    ]));
+    if (!localStorage.getItem('gb_coupons')) localStorage.setItem('gb_coupons', JSON.stringify([
+      {id:'coupon_1',code:'SAVE10',type:'fixed',value:10,minOrder:50,maxUses:100,usedCount:0,expiresAt:'2025-12-31',status:'active'},
+      {id:'coupon_2',code:'FIRST20',type:'percent',value:20,minOrder:0,maxUses:1000,usedCount:0,expiresAt:'2025-01-15',status:'active'},
+      {id:'coupon_3',code:'WELCOME',type:'fixed',value:15,minOrder:30,maxUses:500,usedCount:0,expiresAt:'2025-06-30',status:'active'}
+    ]));
+  },
+
+  // Getters
+  get: (k) => {
+    try { return JSON.parse(localStorage.getItem('gb_' + k) || '[]'); } 
+    catch (e) { return []; }
+  },
+  
+  getObj: (k) => {
+    try { return JSON.parse(localStorage.getItem('gb_' + k) || '{}'); } 
+    catch (e) { return {}; }
+  },
+  
+  set: (k, d) => localStorage.setItem('gb_' + k, JSON.stringify(d)),
+
+  // Data accessors
+  getUsers: () => DB.get('users'),
+  getCategories: () => DB.get('categories'),
+  getServices: () => DB.get('services'),
+  getProviders: () => DB.get('providers'),
+  getBookings: () => DB.get('bookings'),
+  getLocations: () => DB.getObj('locations'),
+  getFavorites: () => DB.get('favorites'),
+  getChats: () => DB.get('chats'),
+  getMessages: () => DB.get('messages'),
+  getNotifications: () => DB.get('notifications'),
+  getReviews: () => DB.get('reviews'),
+  getCoupons: () => DB.get('coupons'),
+
+  // Find functions
+  getUserById: (id) => DB.getUsers().find(u => u.id === id),
+  getUserByEmail: (e) => DB.getUsers().find(u => u.email.toLowerCase() === e.toLowerCase()),
+  getProviderByUserId: (uid) => DB.getProviders().find(p => p.userId === uid),
+  getProviderById: (id) => DB.getProviders().find(p => p.id === id),
+  getCategoryById: (id) => DB.getCategories().find(c => c.id === id),
+
+  // User functions
+  addUser: (u) => {
+    const users = DB.getUsers();
+    const newUser = { ...u, createdAt: new Date().toISOString() };
+    users.push(newUser);
+    DB.set('users', users);
+    return newUser;
+  },
+  
+  updateUser: (id, d) => {
+    const users = DB.getUsers();
+    const i = users.findIndex(u => u.id === id);
+    if (i !== -1) { users[i] = { ...users[i], ...d }; DB.set('users', users); }
+    return users[i];
+  },
+
+  // Provider functions
+  addProvider: (p) => {
+    const providers = DB.getProviders();
+    const newProvider = { ...p, createdAt: new Date().toISOString() };
+    providers.push(newProvider);
+    DB.set('providers', providers);
+    return newProvider;
+  },
+  
+  updateProvider: (id, d) => {
+    const providers = DB.getProviders();
+    const i = providers.findIndex(p => p.id === id);
+    if (i !== -1) { providers[i] = { ...providers[i], ...d }; DB.set('providers', providers); }
+    return providers[i];
+  },
+  
+  deleteProvider: (id) => DB.set('providers', DB.getProviders().filter(p => p.id !== id)),
+
+  // Booking functions
+  addBooking: (b) => {
+    const bookings = DB.getBookings();
+    const newBooking = { ...b, createdAt: new Date().toISOString() };
+    bookings.push(newBooking);
+    DB.set('bookings', bookings);
+    // Create notification for provider
+    DB.addNotification({
+      userId: null,
+      providerId: b.providerId,
+      type: 'booking_new',
+      title: 'New Booking Request',
+      message: `You have a new booking for ${b.serviceName}`,
+      data: { bookingId: newBooking.id },
+      read: false
+    });
+    return newBooking;
+  },
+  
+  updateBooking: (id, d) => {
+    const bookings = DB.getBookings();
+    const i = bookings.findIndex(b => b.id === id);
+    if (i !== -1) { 
+      bookings[i] = { ...bookings[i], ...d }; 
+      DB.set('bookings', bookings);
+      // Notify user about status change
+      if (d.status) {
+        DB.addNotification({
+          userId: bookings[i].userId,
+          providerId: null,
+          type: 'booking_' + d.status,
+          title: 'Booking ' + d.status.charAt(0).toUpperCase() + d.status.slice(1),
+          message: `Your booking has been ${d.status}`,
+          data: { bookingId: id },
+          read: false
+        });
+      }
+    }
+    return bookings[i];
+  },
+
+  // Category functions
+  addCategory: (c) => { const cats = DB.getCategories(); cats.push(c); DB.set('categories', cats); return c; },
+  updateCategory: (id, d) => {
+    const cats = DB.getCategories();
+    const i = cats.findIndex(c => c.id === id);
+    if (i !== -1) { cats[i] = { ...cats[i], ...d }; DB.set('categories', cats); }
+    return cats[i];
+  },
+
+  // Service functions
+  addService: (s) => { const services = DB.getServices(); services.push(s); DB.set('services', services); return s; },
+  updateService: (id, d) => {
+    const services = DB.getServices();
+    const i = services.findIndex(s => s.id === id);
+    if (i !== -1) { services[i] = { ...services[i], ...d }; DB.set('services', services); }
+    return services[i];
+  },
+  deleteService: (id) => DB.set('services', DB.getServices().filter(s => s.id !== id)),
+
+  // ========== CHAT SYSTEM (Module 31) ==========
+  
+  // Get or create chat between user and provider
+  getOrCreateChat: (userId, providerId) => {
+    const chats = DB.getChats();
+    let chat = chats.find(c => c.userId === userId && c.providerId === providerId);
+    if (!chat) {
+      chat = {
+        id: 'chat_' + Date.now(),
+        userId,
+        providerId,
+        lastMessage: null,
+        lastMessageAt: null,
+        unreadUser: 0,
+        unreadProvider: 0,
+        createdAt: new Date().toISOString()
+      };
+      chats.push(chat);
+      DB.set('chats', chats);
+    }
+    return chat;
+  },
+
+  // Get user's chats
+  getUserChats: (userId) => {
+    return DB.getChats().filter(c => c.userId === userId).map(chat => {
+      const provider = DB.getProviderById(chat.providerId);
+      const messages = DB.getChatMessages(chat.id);
+      return { ...chat, provider, messages };
+    }).sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+  },
+
+  // Get provider's chats
+  getProviderChats: (providerId) => {
+    return DB.getChats().filter(c => c.providerId === providerId).map(chat => {
+      const user = DB.getUserById(chat.userId);
+      const messages = DB.getChatMessages(chat.id);
+      return { ...chat, user, messages };
+    }).sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+  },
+
+  // Get messages for a chat
+  getChatMessages: (chatId) => {
+    return DB.getMessages().filter(m => m.chatId === chatId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  },
+
+  // Send message
+  sendMessage: (chatId, senderId, senderType, text, attachment = null) => {
+    const messages = DB.getMessages();
+    const message = {
+      id: 'msg_' + Date.now(),
+      chatId,
+      senderId,
+      senderType, // 'user' or 'provider'
+      text,
+      attachment,
+      read: false,
+      createdAt: new Date().toISOString()
+    };
+    messages.push(message);
+    DB.set('messages', messages);
+
+    // Update chat's last message
+    const chats = DB.getChats();
+    const chatIndex = chats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+      chats[chatIndex].lastMessage = text;
+      chats[chatIndex].lastMessageAt = message.createdAt;
+      if (senderType === 'user') {
+        chats[chatIndex].unreadProvider = (chats[chatIndex].unreadProvider || 0) + 1;
+      } else {
+        chats[chatIndex].unreadUser = (chats[chatIndex].unreadUser || 0) + 1;
+      }
+      DB.set('chats', chats);
+    }
+
+    return message;
+  },
+
+  // Mark messages as read
+  markMessagesRead: (chatId, readerType) => {
+    const messages = DB.getMessages();
+    messages.forEach(m => {
+      if (m.chatId === chatId && m.senderType !== readerType) {
+        m.read = true;
+      }
+    });
+    DB.set('messages', messages);
+
+    // Reset unread count
+    const chats = DB.getChats();
+    const chatIndex = chats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+      if (readerType === 'user') {
+        chats[chatIndex].unreadUser = 0;
+      } else {
+        chats[chatIndex].unreadProvider = 0;
+      }
+      DB.set('chats', chats);
+    }
+  },
+
+  // Get total unread for user
+  getUserUnreadCount: (userId) => {
+    return DB.getChats().filter(c => c.userId === userId).reduce((sum, c) => sum + (c.unreadUser || 0), 0);
+  },
+
+  // Get total unread for provider
+  getProviderUnreadCount: (providerId) => {
+    return DB.getChats().filter(c => c.providerId === providerId).reduce((sum, c) => sum + (c.unreadProvider || 0), 0);
+  },
+
+  // Quick reply templates
+  getQuickReplies: () => [
+    { id: 1, text: "Hello! How can I help you?" },
+    { id: 2, text: "Thank you for your booking!" },
+    { id: 3, text: "I'll confirm shortly." },
+    { id: 4, text: "Yes, we're available at that time." },
+    { id: 5, text: "Please let me know if you need anything else." },
+    { id: 6, text: "See you soon! 😊" }
+  ],
+
+  // ========== NOTIFICATION SYSTEM (Module 32) ==========
+
+  // Add notification
+  addNotification: (n) => {
+    const notifications = DB.getNotifications();
+    const newNotification = {
+      id: 'notif_' + Date.now(),
+      ...n,
+      read: false,
+      createdAt: new Date().toISOString()
+    };
+    notifications.unshift(newNotification); // Add to beginning
+    DB.set('notifications', notifications);
+    
+    // Also add to history
+    DB.addToNotificationHistory(newNotification);
+    
+    return newNotification;
+  },
+
+  // Get user notifications
+  getUserNotifications: (userId) => {
+    return DB.getNotifications().filter(n => n.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  // Get provider notifications
+  getProviderNotifications: (providerId) => {
+    return DB.getNotifications().filter(n => n.providerId === providerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  // Mark notification as read
+  markNotificationRead: (id) => {
+    const notifications = DB.getNotifications();
+    const i = notifications.findIndex(n => n.id === id);
+    if (i !== -1) { notifications[i].read = true; DB.set('notifications', notifications); }
+  },
+
+  // Mark all as read
+  markAllNotificationsRead: (userId = null, providerId = null) => {
+    const notifications = DB.getNotifications();
+    notifications.forEach(n => {
+      if ((userId && n.userId === userId) || (providerId && n.providerId === providerId)) {
+        n.read = true;
+      }
+    });
+    DB.set('notifications', notifications);
+  },
+
+  // Get unread count
+  getUnreadNotificationCount: (userId = null, providerId = null) => {
+    return DB.getNotifications().filter(n => 
+      !n.read && ((userId && n.userId === userId) || (providerId && n.providerId === providerId))
+    ).length;
+  },
+
+  // Delete notification
+  deleteNotification: (id) => DB.set('notifications', DB.getNotifications().filter(n => n.id !== id)),
+
+  // Clear all notifications
+  clearNotifications: (userId = null, providerId = null) => {
+    DB.set('notifications', DB.getNotifications().filter(n => 
+      !((userId && n.userId === userId) || (providerId && n.providerId === providerId))
+    ));
+  },
+
+  // Notification types
+  notificationTypes: {
+    booking_new: { icon: 'fa-calendar-plus', color: 'blue', label: 'New Booking' },
+    booking_confirmed: { icon: 'fa-check-circle', color: 'green', label: 'Booking Confirmed' },
+    booking_cancelled: { icon: 'fa-times-circle', color: 'red', label: 'Booking Cancelled' },
+    booking_completed: { icon: 'fa-star', color: 'yellow', label: 'Booking Completed' },
+    booking_reminder: { icon: 'fa-bell', color: 'orange', label: 'Reminder' },
+    booking_rescheduled: { icon: 'fa-calendar-alt', color: 'blue', label: 'Rescheduled' },
+    booking_recurring: { icon: 'fa-repeat', color: 'purple', label: 'Recurring Booking' },
+    waitlist_joined: { icon: 'fa-list', color: 'blue', label: 'Waitlist' },
+    waitlist_available: { icon: 'fa-check-double', color: 'green', label: 'Slot Available' },
+    message_new: { icon: 'fa-comment', color: 'purple', label: 'New Message' },
+    review_new: { icon: 'fa-star', color: 'yellow', label: 'New Review' },
+    review_reply: { icon: 'fa-reply', color: 'blue', label: 'Review Reply' },
+    promo: { icon: 'fa-gift', color: 'pink', label: 'Promotion' },
+    system: { icon: 'fa-info-circle', color: 'gray', label: 'System' },
+    payment: { icon: 'fa-credit-card', color: 'green', label: 'Payment' },
+    points: { icon: 'fa-coins', color: 'yellow', label: 'Points Earned' },
+    membership: { icon: 'fa-crown', color: 'purple', label: 'Membership' }
+  },
+
+  // ========== PLAN L: NOTIFICATIONS & ALERTS (Modules 67-71) ==========
+
+  // Module 68 & 69: Notification Preferences
+  getNotificationPreferences: (userId) => {
+    const key = 'gb_notif_prefs_' + userId;
+    const defaults = {
+      // Push notifications
+      push_enabled: true,
+      push_bookings: true,
+      push_messages: true,
+      push_reminders: true,
+      push_promos: true,
+      push_reviews: true,
+      
+      // Email notifications
+      email_enabled: true,
+      email_bookings: true,
+      email_messages: false,
+      email_reminders: true,
+      email_promos: true,
+      email_reviews: true,
+      email_weekly_summary: true,
+      
+      // SMS notifications
+      sms_enabled: false,
+      sms_bookings: true,
+      sms_reminders: true,
+      sms_urgent: true,
+      
+      // In-app alerts
+      inapp_sound: true,
+      inapp_vibrate: true,
+      inapp_badge: true,
+      inapp_banner: true,
+      
+      // Quiet hours
+      quiet_enabled: false,
+      quiet_start: '22:00',
+      quiet_end: '08:00'
+    };
+    
+    const saved = JSON.parse(localStorage.getItem(key) || '{}');
+    return { ...defaults, ...saved };
+  },
+
+  updateNotificationPreferences: (userId, prefs) => {
+    const key = 'gb_notif_prefs_' + userId;
+    const current = DB.getNotificationPreferences(userId);
+    const updated = { ...current, ...prefs };
+    localStorage.setItem(key, JSON.stringify(updated));
+    return updated;
+  },
+
+  // Check if notification should be sent based on preferences
+  shouldSendNotification: (userId, type, channel) => {
+    const prefs = DB.getNotificationPreferences(userId);
+    
+    // Check quiet hours
+    if (prefs.quiet_enabled) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [startH, startM] = prefs.quiet_start.split(':').map(Number);
+      const [endH, endM] = prefs.quiet_end.split(':').map(Number);
+      const quietStart = startH * 60 + startM;
+      const quietEnd = endH * 60 + endM;
+      
+      if (quietStart > quietEnd) {
+        // Overnight quiet hours
+        if (currentTime >= quietStart || currentTime < quietEnd) return false;
+      } else {
+        if (currentTime >= quietStart && currentTime < quietEnd) return false;
+      }
+    }
+    
+    // Check channel enabled
+    if (!prefs[channel + '_enabled']) return false;
+    
+    // Map notification type to preference key
+    const typeMap = {
+      booking_new: 'bookings',
+      booking_confirmed: 'bookings',
+      booking_cancelled: 'bookings',
+      booking_completed: 'bookings',
+      booking_rescheduled: 'bookings',
+      booking_recurring: 'bookings',
+      booking_reminder: 'reminders',
+      message_new: 'messages',
+      review_new: 'reviews',
+      review_reply: 'reviews',
+      promo: 'promos',
+      waitlist_joined: 'bookings',
+      waitlist_available: 'bookings'
+    };
+    
+    const prefKey = typeMap[type] || 'bookings';
+    return prefs[channel + '_' + prefKey] !== false;
+  },
+
+  // Module 71: Notification History
+  getNotificationHistory: (userId = null, providerId = null) => {
+    const history = JSON.parse(localStorage.getItem('gb_notif_history') || '[]');
+    return history.filter(n => 
+      (userId && n.userId === userId) || (providerId && n.providerId === providerId)
+    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  addToNotificationHistory: (notification) => {
+    const history = JSON.parse(localStorage.getItem('gb_notif_history') || '[]');
+    history.unshift({
+      ...notification,
+      archivedAt: new Date().toISOString()
+    });
+    // Keep only last 100 per user
+    const trimmed = history.slice(0, 500);
+    localStorage.setItem('gb_notif_history', JSON.stringify(trimmed));
+  },
+
+  clearNotificationHistory: (userId = null, providerId = null) => {
+    const history = JSON.parse(localStorage.getItem('gb_notif_history') || '[]');
+    const filtered = history.filter(n => 
+      !((userId && n.userId === userId) || (providerId && n.providerId === providerId))
+    );
+    localStorage.setItem('gb_notif_history', JSON.stringify(filtered));
+  },
+
+  // Get notification stats
+  getNotificationStats: (userId = null, providerId = null) => {
+    const history = DB.getNotificationHistory(userId, providerId);
+    const today = new Date().toISOString().split('T')[0];
+    const thisWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      total: history.length,
+      today: history.filter(n => n.createdAt?.startsWith(today)).length,
+      thisWeek: history.filter(n => n.createdAt >= thisWeek).length,
+      byType: history.reduce((acc, n) => {
+        acc[n.type] = (acc[n.type] || 0) + 1;
+        return acc;
+      }, {}),
+      unread: DB.getUnreadNotificationCount(userId, providerId)
+    };
+  },
+
+  // Module 70: In-App Alert helpers
+  createAlert: (type, title, message, data = {}) => ({
+    id: 'alert_' + Date.now(),
+    type, // 'success', 'error', 'warning', 'info', 'promo'
+    title,
+    message,
+    data,
+    createdAt: new Date().toISOString(),
+    dismissed: false
+  }),
+
+  // Promo banner alerts
+  getActivePromos: () => {
+    const promos = JSON.parse(localStorage.getItem('gb_promo_banners') || '[]');
+    const now = new Date();
+    return promos.filter(p => 
+      p.active && 
+      (!p.startDate || new Date(p.startDate) <= now) &&
+      (!p.endDate || new Date(p.endDate) >= now)
+    );
+  },
+
+  addPromoBanner: (promo) => {
+    const promos = JSON.parse(localStorage.getItem('gb_promo_banners') || '[]');
+    promos.push({
+      id: 'promo_' + Date.now(),
+      ...promo,
+      active: true,
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem('gb_promo_banners', JSON.stringify(promos));
+  },
+
+  dismissPromoBanner: (promoId, userId) => {
+    const key = 'gb_dismissed_promos_' + userId;
+    const dismissed = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!dismissed.includes(promoId)) {
+      dismissed.push(promoId);
+      localStorage.setItem(key, JSON.stringify(dismissed));
+    }
+  },
+
+  getDismissedPromos: (userId) => {
+    return JSON.parse(localStorage.getItem('gb_dismissed_promos_' + userId) || '[]');
+  },
+
+  // ========== PLAN I: REVIEWS SYSTEM (Modules 51-55) ==========
+
+  // Module 51: Add Review (Enhanced)
+  addReview: (r) => {
+    const reviews = DB.getReviews();
+    const newReview = { 
+      ...r, 
+      id: 'review_' + Date.now(), 
+      createdAt: new Date().toISOString(),
+      helpful: 0,
+      reply: null,
+      reported: false,
+      reportReason: null
+    };
+    reviews.push(newReview);
+    DB.set('reviews', reviews);
+    
+    // Update provider rating
+    const providerReviews = reviews.filter(rv => rv.providerId === r.providerId && !rv.reported);
+    const avgRating = providerReviews.reduce((sum, rv) => sum + rv.rating, 0) / providerReviews.length;
+    DB.updateProvider(r.providerId, { 
+      rating: Math.round(avgRating * 10) / 10, 
+      reviewCount: providerReviews.length 
+    });
+    
+    // Check for Top Rated Badge (Module 55)
+    if (avgRating >= 4.5 && providerReviews.length >= 5) {
+      DB.updateProvider(r.providerId, { topRated: true });
+    }
+    
+    // Notify provider
+    DB.addNotification({
+      providerId: r.providerId,
+      type: 'review_new',
+      title: 'New Review! ⭐',
+      message: `You received a ${r.rating}-star review from ${r.userName || 'a customer'}!`,
+      data: { reviewId: newReview.id }
+    });
+    
+    return newReview;
+  },
+
+  getProviderReviews: (providerId) => DB.getReviews().filter(r => r.providerId === providerId && !r.reported).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)),
+  
+  getAllProviderReviews: (providerId) => DB.getReviews().filter(r => r.providerId === providerId),
+
+  getReviewById: (reviewId) => DB.getReviews().find(r => r.id === reviewId),
+
+  // Module 52: Reply to Review
+  replyToReview: (reviewId, replyText, providerName) => {
+    const reviews = DB.getReviews();
+    const index = reviews.findIndex(r => r.id === reviewId);
+    if (index !== -1) {
+      reviews[index].reply = {
+        text: replyText,
+        by: providerName,
+        createdAt: new Date().toISOString()
+      };
+      DB.set('reviews', reviews);
+      
+      // Notify user who wrote the review
+      if (reviews[index].userId) {
+        DB.addNotification({
+          userId: reviews[index].userId,
+          type: 'review_reply',
+          title: 'Reply to Your Review 💬',
+          message: `${providerName} replied to your review`,
+          data: { reviewId }
+        });
+      }
+      
+      return { success: true, review: reviews[index] };
+    }
+    return { success: false, error: 'Review not found' };
+  },
+
+  // Module 53: Report Review
+  reportReview: (reviewId, reason, reportedBy) => {
+    const reviews = DB.getReviews();
+    const index = reviews.findIndex(r => r.id === reviewId);
+    if (index !== -1) {
+      reviews[index].reported = true;
+      reviews[index].reportReason = reason;
+      reviews[index].reportedBy = reportedBy;
+      reviews[index].reportedAt = new Date().toISOString();
+      DB.set('reviews', reviews);
+      
+      // Recalculate provider rating (excluding reported reviews)
+      const providerId = reviews[index].providerId;
+      const validReviews = reviews.filter(rv => rv.providerId === providerId && !rv.reported);
+      if (validReviews.length > 0) {
+        const avgRating = validReviews.reduce((sum, rv) => sum + rv.rating, 0) / validReviews.length;
+        DB.updateProvider(providerId, { 
+          rating: Math.round(avgRating * 10) / 10, 
+          reviewCount: validReviews.length 
+        });
+      }
+      
+      return { success: true };
+    }
+    return { success: false, error: 'Review not found' };
+  },
+
+  // Mark review as helpful
+  markReviewHelpful: (reviewId) => {
+    const reviews = DB.getReviews();
+    const index = reviews.findIndex(r => r.id === reviewId);
+    if (index !== -1) {
+      reviews[index].helpful = (reviews[index].helpful || 0) + 1;
+      DB.set('reviews', reviews);
+      return reviews[index].helpful;
+    }
+    return 0;
+  },
+
+  // Module 54: Rating Analytics
+  getRatingAnalytics: (providerId) => {
+    const reviews = DB.getProviderReviews(providerId);
+    const total = reviews.length;
+    
+    if (total === 0) {
+      return {
+        total: 0,
+        average: 0,
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        percentages: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        withPhotos: 0,
+        withReplies: 0,
+        recentTrend: 'neutral'
+      };
+    }
+    
+    // Distribution
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => {
+      const rating = Math.round(r.rating);
+      if (distribution[rating] !== undefined) distribution[rating]++;
+    });
+    
+    // Percentages
+    const percentages = {};
+    for (let i = 1; i <= 5; i++) {
+      percentages[i] = Math.round((distribution[i] / total) * 100);
+    }
+    
+    // Average
+    const average = reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+    
+    // With photos
+    const withPhotos = reviews.filter(r => r.photos && r.photos.length > 0).length;
+    
+    // With replies
+    const withReplies = reviews.filter(r => r.reply).length;
+    
+    // Recent trend (last 30 days vs previous)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    
+    const recentReviews = reviews.filter(r => new Date(r.createdAt) >= thirtyDaysAgo);
+    const olderReviews = reviews.filter(r => new Date(r.createdAt) >= sixtyDaysAgo && new Date(r.createdAt) < thirtyDaysAgo);
+    
+    let recentTrend = 'neutral';
+    if (recentReviews.length > 0 && olderReviews.length > 0) {
+      const recentAvg = recentReviews.reduce((s, r) => s + r.rating, 0) / recentReviews.length;
+      const olderAvg = olderReviews.reduce((s, r) => s + r.rating, 0) / olderReviews.length;
+      if (recentAvg > olderAvg + 0.2) recentTrend = 'up';
+      else if (recentAvg < olderAvg - 0.2) recentTrend = 'down';
+    }
+    
+    return {
+      total,
+      average: Math.round(average * 10) / 10,
+      distribution,
+      percentages,
+      withPhotos,
+      withReplies,
+      recentTrend,
+      responseRate: total > 0 ? Math.round((withReplies / total) * 100) : 0
+    };
+  },
+
+  // Module 55: Top Rated Badge Check
+  checkTopRatedBadge: (providerId) => {
+    const reviews = DB.getProviderReviews(providerId);
+    const provider = DB.getProviderById(providerId);
+    
+    if (!provider) return false;
+    
+    // Criteria: 4.5+ rating AND 5+ reviews
+    const isTopRated = provider.rating >= 4.5 && reviews.length >= 5;
+    
+    if (isTopRated !== provider.topRated) {
+      DB.updateProvider(providerId, { topRated: isTopRated });
+    }
+    
+    return isTopRated;
+  },
+
+  // Get all reported reviews (for admin)
+  getReportedReviews: () => DB.getReviews().filter(r => r.reported),
+
+  // Approve reported review (remove report flag)
+  approveReportedReview: (reviewId) => {
+    const reviews = DB.getReviews();
+    const index = reviews.findIndex(r => r.id === reviewId);
+    if (index !== -1) {
+      reviews[index].reported = false;
+      reviews[index].reportReason = null;
+      reviews[index].reportedBy = null;
+      reviews[index].reportedAt = null;
+      DB.set('reviews', reviews);
+      return { success: true };
+    }
+    return { success: false };
+  },
+
+  // Delete reported review (for admin)
+  deleteReview: (reviewId) => {
+    const reviews = DB.getReviews();
+    const review = reviews.find(r => r.id === reviewId);
+    if (review) {
+      const providerId = review.providerId;
+      const filtered = reviews.filter(r => r.id !== reviewId);
+      DB.set('reviews', filtered);
+      
+      // Recalculate provider rating
+      const validReviews = filtered.filter(rv => rv.providerId === providerId && !rv.reported);
+      if (validReviews.length > 0) {
+        const avgRating = validReviews.reduce((sum, rv) => sum + rv.rating, 0) / validReviews.length;
+        DB.updateProvider(providerId, { 
+          rating: Math.round(avgRating * 10) / 10, 
+          reviewCount: validReviews.length 
+        });
+      } else {
+        DB.updateProvider(providerId, { rating: 0, reviewCount: 0 });
+      }
+      
+      return { success: true };
+    }
+    return { success: false };
+  },
+
+  // ========== COUPONS SYSTEM ==========
+
+  validateCoupon: (code, orderAmount) => {
+    const coupons = DB.getCoupons();
+    const coupon = coupons.find(c => c.code.toLowerCase() === code.toLowerCase() && c.status === 'active');
+    if (!coupon) return { valid: false, error: 'Invalid coupon code' };
+    if (new Date(coupon.expiresAt) < new Date()) return { valid: false, error: 'Coupon expired' };
+    if (coupon.usedCount >= coupon.maxUses) return { valid: false, error: 'Coupon limit reached' };
+    if (orderAmount < coupon.minOrder) return { valid: false, error: `Minimum order €${coupon.minOrder} required` };
+    
+    const discount = coupon.type === 'percent' ? (orderAmount * coupon.value / 100) : coupon.value;
+    return { valid: true, coupon, discount: Math.min(discount, orderAmount) };
+  },
+
+  useCoupon: (code) => {
+    const coupons = DB.getCoupons();
+    const i = coupons.findIndex(c => c.code.toLowerCase() === code.toLowerCase());
+    if (i !== -1) { coupons[i].usedCount++; DB.set('coupons', coupons); }
+  },
+
+  // ========== PLAN J: BOOKING ENHANCEMENTS (Modules 56-61) ==========
+
+  // Module 56: Reschedule Booking
+  rescheduleBooking: (bookingId, newDate, newTime) => {
+    const bookings = DB.getBookings();
+    const index = bookings.findIndex(b => b.id === bookingId);
+    if (index !== -1) {
+      const oldDate = bookings[index].date;
+      const oldTime = bookings[index].time;
+      bookings[index].date = newDate;
+      bookings[index].time = newTime;
+      bookings[index].rescheduled = true;
+      bookings[index].rescheduledAt = new Date().toISOString();
+      bookings[index].previousDate = oldDate;
+      bookings[index].previousTime = oldTime;
+      DB.set('bookings', bookings);
+      
+      // Notify provider
+      DB.addNotification({
+        providerId: bookings[index].providerId,
+        type: 'booking_rescheduled',
+        title: 'Booking Rescheduled 🔄',
+        message: `Booking changed from ${oldDate} ${oldTime} to ${newDate} ${newTime}`,
+        data: { bookingId }
+      });
+      
+      // Notify user
+      DB.addNotification({
+        userId: bookings[index].userId,
+        type: 'booking_rescheduled',
+        title: 'Booking Rescheduled ✓',
+        message: `Your appointment is now on ${newDate} at ${newTime}`,
+        data: { bookingId }
+      });
+      
+      return { success: true, booking: bookings[index] };
+    }
+    return { success: false, error: 'Booking not found' };
+  },
+
+  // Module 57: Multi-Service Booking (services array instead of single service)
+  addMultiServiceBooking: (bookingData) => {
+    const bookings = DB.getBookings();
+    const newBooking = {
+      ...bookingData,
+      id: 'booking_' + Date.now(),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      isMultiService: bookingData.services && bookingData.services.length > 1
+    };
+    bookings.push(newBooking);
+    DB.set('bookings', bookings);
+    
+    // Notify provider
+    const serviceNames = bookingData.services ? bookingData.services.map(s => s.name).join(', ') : bookingData.serviceName;
+    DB.addNotification({
+      providerId: bookingData.providerId,
+      type: 'booking_new',
+      title: 'New Booking! 📅',
+      message: `${bookingData.services?.length > 1 ? bookingData.services.length + ' services: ' : ''}${serviceNames} on ${bookingData.date}`,
+      data: { bookingId: newBooking.id }
+    });
+    
+    return newBooking;
+  },
+
+  // Module 58: Booking Reminders
+  scheduleReminder: (bookingId, reminderTime) => {
+    const reminders = JSON.parse(localStorage.getItem('gb_reminders') || '[]');
+    reminders.push({
+      id: 'reminder_' + Date.now(),
+      bookingId,
+      reminderTime, // 'onehour', 'oneday', 'twodays'
+      sent: false,
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem('gb_reminders', JSON.stringify(reminders));
+    return { success: true };
+  },
+
+  checkAndSendReminders: () => {
+    const reminders = JSON.parse(localStorage.getItem('gb_reminders') || '[]');
+    const bookings = DB.getBookings();
+    const now = new Date();
+    let sent = 0;
+    
+    reminders.forEach((reminder, index) => {
+      if (reminder.sent) return;
+      
+      const booking = bookings.find(b => b.id === reminder.bookingId);
+      if (!booking || booking.status === 'cancelled') return;
+      
+      const bookingDate = new Date(`${booking.date} ${booking.time}`);
+      const hoursUntil = (bookingDate - now) / (1000 * 60 * 60);
+      
+      let shouldSend = false;
+      if (reminder.reminderTime === 'onehour' && hoursUntil <= 1 && hoursUntil > 0) shouldSend = true;
+      if (reminder.reminderTime === 'oneday' && hoursUntil <= 24 && hoursUntil > 23) shouldSend = true;
+      if (reminder.reminderTime === 'twodays' && hoursUntil <= 48 && hoursUntil > 47) shouldSend = true;
+      
+      if (shouldSend) {
+        DB.addNotification({
+          userId: booking.userId,
+          type: 'booking_reminder',
+          title: 'Appointment Reminder ⏰',
+          message: `Your appointment is ${reminder.reminderTime === 'onehour' ? 'in 1 hour' : reminder.reminderTime === 'oneday' ? 'tomorrow' : 'in 2 days'}!`,
+          data: { bookingId: booking.id }
+        });
+        reminders[index].sent = true;
+        sent++;
+      }
+    });
+    
+    localStorage.setItem('gb_reminders', JSON.stringify(reminders));
+    return { sent };
+  },
+
+  // Module 59: Waitlist System
+  getWaitlist: () => JSON.parse(localStorage.getItem('gb_waitlist') || '[]'),
+  
+  joinWaitlist: (userId, providerId, serviceId, preferredDate, preferredTime) => {
+    const waitlist = DB.getWaitlist();
+    
+    // Check if already on waitlist
+    if (waitlist.find(w => w.userId === userId && w.providerId === providerId && w.preferredDate === preferredDate)) {
+      return { success: false, error: 'Already on waitlist for this date' };
+    }
+    
+    const entry = {
+      id: 'waitlist_' + Date.now(),
+      userId,
+      providerId,
+      serviceId,
+      preferredDate,
+      preferredTime,
+      status: 'waiting', // waiting, notified, booked, expired
+      createdAt: new Date().toISOString()
+    };
+    
+    waitlist.push(entry);
+    localStorage.setItem('gb_waitlist', JSON.stringify(waitlist));
+    
+    // Notify user
+    DB.addNotification({
+      userId,
+      type: 'waitlist_joined',
+      title: 'Added to Waitlist 📋',
+      message: `We'll notify you if a slot opens on ${preferredDate}`,
+      data: { waitlistId: entry.id }
+    });
+    
+    return { success: true, entry };
+  },
+
+  leaveWaitlist: (waitlistId) => {
+    const waitlist = DB.getWaitlist().filter(w => w.id !== waitlistId);
+    localStorage.setItem('gb_waitlist', JSON.stringify(waitlist));
+    return { success: true };
+  },
+
+  notifyWaitlist: (providerId, date, time) => {
+    const waitlist = DB.getWaitlist();
+    let notified = 0;
+    
+    waitlist.forEach((entry, index) => {
+      if (entry.providerId === providerId && entry.preferredDate === date && entry.status === 'waiting') {
+        DB.addNotification({
+          userId: entry.userId,
+          type: 'waitlist_available',
+          title: 'Slot Available! 🎉',
+          message: `A slot opened up on ${date} at ${time}. Book now!`,
+          data: { waitlistId: entry.id, providerId, date, time }
+        });
+        waitlist[index].status = 'notified';
+        waitlist[index].notifiedAt = new Date().toISOString();
+        notified++;
+      }
+    });
+    
+    localStorage.setItem('gb_waitlist', JSON.stringify(waitlist));
+    return { notified };
+  },
+
+  getUserWaitlist: (userId) => DB.getWaitlist().filter(w => w.userId === userId && w.status === 'waiting'),
+
+  // Module 60: Recurring Booking
+  createRecurringBooking: (bookingData, frequency, count) => {
+    // frequency: 'weekly', 'biweekly', 'monthly'
+    // count: number of occurrences
+    const bookings = [];
+    let currentDate = new Date(bookingData.date);
+    
+    for (let i = 0; i < count; i++) {
+      const booking = {
+        ...bookingData,
+        id: 'booking_' + Date.now() + '_' + i,
+        date: currentDate.toISOString().split('T')[0],
+        status: i === 0 ? 'pending' : 'scheduled',
+        isRecurring: true,
+        recurringId: 'recurring_' + Date.now(),
+        recurringIndex: i + 1,
+        recurringTotal: count,
+        recurringFrequency: frequency,
+        createdAt: new Date().toISOString()
+      };
+      bookings.push(booking);
+      
+      // Move to next date based on frequency
+      if (frequency === 'weekly') currentDate.setDate(currentDate.getDate() + 7);
+      else if (frequency === 'biweekly') currentDate.setDate(currentDate.getDate() + 14);
+      else if (frequency === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    
+    const allBookings = DB.getBookings();
+    allBookings.push(...bookings);
+    DB.set('bookings', allBookings);
+    
+    // Notify provider
+    DB.addNotification({
+      providerId: bookingData.providerId,
+      type: 'booking_recurring',
+      title: 'Recurring Booking! 🔁',
+      message: `${count} ${frequency} appointments scheduled starting ${bookingData.date}`,
+      data: { recurringId: bookings[0].recurringId }
+    });
+    
+    return { success: true, bookings };
+  },
+
+  getRecurringBookings: (recurringId) => DB.getBookings().filter(b => b.recurringId === recurringId),
+
+  cancelRecurringBookings: (recurringId, cancelFuture = true) => {
+    const bookings = DB.getBookings();
+    const now = new Date();
+    
+    bookings.forEach((b, i) => {
+      if (b.recurringId === recurringId) {
+        if (cancelFuture && new Date(b.date) > now) {
+          bookings[i].status = 'cancelled';
+          bookings[i].cancelledAt = new Date().toISOString();
+        }
+      }
+    });
+    
+    DB.set('bookings', bookings);
+    return { success: true };
+  },
+
+  // Module 61: Time Slot Blocking
+  getBlockedSlots: (providerId) => {
+    const blocked = JSON.parse(localStorage.getItem('gb_blocked_slots') || '[]');
+    return blocked.filter(b => b.providerId === providerId);
+  },
+
+  blockTimeSlot: (providerId, date, startTime, endTime, reason = '') => {
+    const blocked = JSON.parse(localStorage.getItem('gb_blocked_slots') || '[]');
+    
+    const block = {
+      id: 'block_' + Date.now(),
+      providerId,
+      date,
+      startTime,
+      endTime,
+      reason,
+      createdAt: new Date().toISOString()
+    };
+    
+    blocked.push(block);
+    localStorage.setItem('gb_blocked_slots', JSON.stringify(blocked));
+    
+    // Notify waitlist users if any slots were freed
+    return { success: true, block };
+  },
+
+  unblockTimeSlot: (blockId) => {
+    const blocked = JSON.parse(localStorage.getItem('gb_blocked_slots') || '[]');
+    const block = blocked.find(b => b.id === blockId);
+    
+    if (block) {
+      localStorage.setItem('gb_blocked_slots', JSON.stringify(blocked.filter(b => b.id !== blockId)));
+      // Notify waitlist
+      DB.notifyWaitlist(block.providerId, block.date, block.startTime);
+      return { success: true };
+    }
+    return { success: false };
+  },
+
+  isSlotBlocked: (providerId, date, time) => {
+    const blocked = DB.getBlockedSlots(providerId);
+    return blocked.some(b => {
+      if (b.date !== date) return false;
+      return time >= b.startTime && time < b.endTime;
+    });
+  },
+
+  // Block full day (holiday/leave)
+  blockFullDay: (providerId, date, reason = 'Holiday') => {
+    return DB.blockTimeSlot(providerId, date, '00:00', '23:59', reason);
+  },
+
+  getProviderHolidays: (providerId) => {
+    return DB.getBlockedSlots(providerId).filter(b => b.startTime === '00:00' && b.endTime === '23:59');
+  },
+
+  // Favorites
+  addFavorite: (userId, providerId) => {
+    const favs = DB.getFavorites();
+    if (!favs.find(f => f.userId === userId && f.providerId === providerId)) {
+      favs.push({ userId, providerId });
+      DB.set('favorites', favs);
+    }
+  },
+  
+  removeFavorite: (userId, providerId) => {
+    DB.set('favorites', DB.getFavorites().filter(f => !(f.userId === userId && f.providerId === providerId)));
+  },
+  
+  getUserFavorites: (userId) => DB.getFavorites().filter(f => f.userId === userId).map(f => f.providerId),
+
+  // Queries
+  getBookingsByUser: (uid) => DB.getBookings().filter(b => b.userId === uid),
+  getBookingsByProvider: (pid) => DB.getBookings().filter(b => b.providerId === pid),
+
+  // ========== PLAN K: SEARCH & FILTER SYSTEM (Modules 62-66) ==========
+
+  // Module 62: Advanced Search
+  searchProviders: (query, providers) => {
+    if (!query || query.trim() === '') return providers;
+    const q = query.toLowerCase().trim();
+    
+    return providers.filter(p => {
+      // Search by business name
+      if (p.businessName?.toLowerCase().includes(q)) return true;
+      // Search by address
+      if (p.address?.toLowerCase().includes(q)) return true;
+      // Search by owner name
+      if (p.ownerName?.toLowerCase().includes(q)) return true;
+      // Search by category
+      const category = DB.getCategories().find(c => c.id === p.categoryId);
+      if (category?.name?.toLowerCase().includes(q)) return true;
+      // Search by services
+      const services = DB.getServices().filter(s => s.categoryId === p.categoryId);
+      if (services.some(s => s.name?.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  },
+
+  // Module 63: Price Range Filter
+  filterByPriceRange: (providers, minPrice, maxPrice) => {
+    if (!minPrice && !maxPrice) return providers;
+    
+    return providers.filter(p => {
+      const services = DB.getServices().filter(s => s.categoryId === p.categoryId);
+      if (services.length === 0) return true;
+      
+      const avgPrice = services.reduce((sum, s) => sum + s.basePrice, 0) / services.length;
+      const lowestPrice = Math.min(...services.map(s => s.basePrice));
+      
+      if (minPrice && lowestPrice < minPrice) return false;
+      if (maxPrice && lowestPrice > maxPrice) return false;
+      return true;
+    });
+  },
+
+  // Get price range for a provider
+  getProviderPriceRange: (providerId) => {
+    const provider = DB.getProviderById(providerId);
+    if (!provider) return { min: 0, max: 0, avg: 0 };
+    
+    const services = DB.getServices().filter(s => s.categoryId === provider.categoryId);
+    if (services.length === 0) return { min: 0, max: 0, avg: 0 };
+    
+    const prices = services.map(s => s.basePrice);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+      avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+    };
+  },
+
+  // Module 64: Rating Filter
+  filterByRating: (providers, minRating) => {
+    if (!minRating) return providers;
+    return providers.filter(p => (p.rating || 0) >= minRating);
+  },
+
+  // Module 65: Distance Filter
+  filterByDistance: (providers, maxDistance, userLat, userLng) => {
+    if (!maxDistance || !userLat || !userLng) return providers;
+    
+    return providers.filter(p => {
+      if (!p.lat || !p.lng) return true;
+      const distance = DB.calculateDistance(userLat, userLng, p.lat, p.lng);
+      return distance <= maxDistance;
+    });
+  },
+
+  // Calculate distance between two points (Haversine formula)
+  calculateDistance: (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  },
+
+  // Module 66: Sort Options
+  sortProviders: (providers, sortBy, userLat, userLng) => {
+    const sorted = [...providers];
+    
+    switch (sortBy) {
+      case 'rating_high':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      
+      case 'rating_low':
+        return sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+      
+      case 'price_low':
+        return sorted.sort((a, b) => {
+          const priceA = DB.getProviderPriceRange(a.id).min;
+          const priceB = DB.getProviderPriceRange(b.id).min;
+          return priceA - priceB;
+        });
+      
+      case 'price_high':
+        return sorted.sort((a, b) => {
+          const priceA = DB.getProviderPriceRange(a.id).min;
+          const priceB = DB.getProviderPriceRange(b.id).min;
+          return priceB - priceA;
+        });
+      
+      case 'distance':
+        if (!userLat || !userLng) return sorted;
+        return sorted.sort((a, b) => {
+          const distA = a.lat && a.lng ? DB.calculateDistance(userLat, userLng, a.lat, a.lng) : 999;
+          const distB = b.lat && b.lng ? DB.calculateDistance(userLat, userLng, b.lat, b.lng) : 999;
+          return distA - distB;
+        });
+      
+      case 'popularity':
+        return sorted.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+      
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      
+      case 'name_az':
+        return sorted.sort((a, b) => (a.businessName || '').localeCompare(b.businessName || ''));
+      
+      case 'name_za':
+        return sorted.sort((a, b) => (b.businessName || '').localeCompare(a.businessName || ''));
+      
+      default:
+        return sorted;
+    }
+  },
+
+  // Combined filter function
+  filterAndSortProviders: (providers, filters, userLat, userLng) => {
+    let result = [...providers];
+    
+    // Apply search
+    if (filters.search) {
+      result = DB.searchProviders(filters.search, result);
+    }
+    
+    // Apply category filter
+    if (filters.category) {
+      result = result.filter(p => p.categoryId === filters.category);
+    }
+    
+    // Apply rating filter
+    if (filters.minRating) {
+      result = DB.filterByRating(result, filters.minRating);
+    }
+    
+    // Apply price filter
+    if (filters.minPrice || filters.maxPrice) {
+      result = DB.filterByPriceRange(result, filters.minPrice, filters.maxPrice);
+    }
+    
+    // Apply distance filter
+    if (filters.maxDistance && userLat && userLng) {
+      result = DB.filterByDistance(result, filters.maxDistance, userLat, userLng);
+    }
+    
+    // Apply verified filter
+    if (filters.verifiedOnly) {
+      result = result.filter(p => p.verified);
+    }
+    
+    // Apply top rated filter
+    if (filters.topRatedOnly) {
+      result = result.filter(p => p.topRated);
+    }
+    
+    // Apply home service filter
+    if (filters.homeServiceOnly) {
+      result = result.filter(p => p.homeService);
+    }
+    
+    // Apply sorting
+    if (filters.sortBy) {
+      result = DB.sortProviders(result, filters.sortBy, userLat, userLng);
+    }
+    
+    return result;
+  },
+
+  // Get filter options (for UI)
+  getFilterOptions: () => ({
+    ratings: [
+      { value: 4.5, label: '4.5+ ⭐' },
+      { value: 4, label: '4+ ⭐' },
+      { value: 3.5, label: '3.5+ ⭐' },
+      { value: 3, label: '3+ ⭐' }
+    ],
+    distances: [
+      { value: 1, label: 'Within 1 km' },
+      { value: 3, label: 'Within 3 km' },
+      { value: 5, label: 'Within 5 km' },
+      { value: 10, label: 'Within 10 km' },
+      { value: 25, label: 'Within 25 km' }
+    ],
+    priceRanges: [
+      { min: 0, max: 25, label: 'Under €25' },
+      { min: 25, max: 50, label: '€25 - €50' },
+      { min: 50, max: 100, label: '€50 - €100' },
+      { min: 100, max: 999, label: '€100+' }
+    ],
+    sortOptions: [
+      { value: 'distance', label: 'Nearest First', icon: 'fa-location-dot' },
+      { value: 'rating_high', label: 'Highest Rated', icon: 'fa-star' },
+      { value: 'price_low', label: 'Price: Low to High', icon: 'fa-arrow-down-1-9' },
+      { value: 'price_high', label: 'Price: High to Low', icon: 'fa-arrow-up-1-9' },
+      { value: 'popularity', label: 'Most Popular', icon: 'fa-fire' },
+      { value: 'newest', label: 'Newest', icon: 'fa-sparkles' },
+      { value: 'name_az', label: 'Name: A-Z', icon: 'fa-arrow-down-a-z' }
+    ]
+  }),
+
+  // Save recent searches
+  saveRecentSearch: (userId, query) => {
+    const key = 'gb_recent_searches_' + userId;
+    let searches = JSON.parse(localStorage.getItem(key) || '[]');
+    // Remove if exists and add to front
+    searches = searches.filter(s => s.toLowerCase() !== query.toLowerCase());
+    searches.unshift(query);
+    // Keep only last 10
+    searches = searches.slice(0, 10);
+    localStorage.setItem(key, JSON.stringify(searches));
+  },
+
+  getRecentSearches: (userId) => {
+    return JSON.parse(localStorage.getItem('gb_recent_searches_' + userId) || '[]');
+  },
+
+  clearRecentSearches: (userId) => {
+    localStorage.removeItem('gb_recent_searches_' + userId);
+  },
+
+  // Stats
+  getStats: () => {
+    const users = DB.getUsers();
+    const providers = DB.getProviders();
+    const bookings = DB.getBookings();
+    
+    return {
+      totalUsers: users.filter(u => u.role === 'user').length,
+      totalProfessionals: users.filter(u => u.role === 'professional').length,
+      totalProviders: providers.length,
+      totalBookings: bookings.length,
+      pendingBookings: bookings.filter(b => b.status === 'pending').length,
+      confirmedBookings: bookings.filter(b => b.status === 'confirmed').length,
+      completedBookings: bookings.filter(b => b.status === 'completed').length,
+      cancelledBookings: bookings.filter(b => b.status === 'cancelled').length,
+      totalRevenue: bookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.price || 0), 0),
+      activeProviders: providers.filter(p => p.status === 'approved').length,
+      pendingProviders: providers.filter(p => p.status === 'pending').length,
+      verifiedProviders: providers.filter(p => p.verified).length,
+      featuredProviders: providers.filter(p => p.featured).length
+    };
+  },
+
+  // ========== MODULE 34: MULTI-LANGUAGE SYSTEM ==========
+  
+  languages: {
+    en: {
+      code: 'en',
+      name: 'English',
+      dir: 'ltr',
+      strings: {
+        welcome: 'Welcome',
+        home: 'Home',
+        search: 'Search',
+        bookings: 'Bookings',
+        profile: 'Profile',
+        favorites: 'Favorites',
+        login: 'Login',
+        register: 'Register',
+        logout: 'Log Out',
+        email: 'Email',
+        password: 'Password',
+        name: 'Name',
+        phone: 'Phone',
+        book_now: 'Book Now',
+        confirm_booking: 'Confirm Booking',
+        select_service: 'Select Service',
+        select_date: 'Select Date',
+        select_time: 'Select Time',
+        total: 'Total',
+        payment: 'Payment',
+        cash: 'Cash',
+        card: 'Card',
+        wallet: 'Wallet',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        pending: 'Pending',
+        confirmed: 'Confirmed',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+        near_you: 'Near You',
+        featured: 'Featured',
+        categories: 'Categories',
+        services: 'Services',
+        reviews: 'Reviews',
+        about: 'About',
+        location: 'Location',
+        working_hours: 'Working Hours',
+        notifications: 'Notifications',
+        messages: 'Messages',
+        settings: 'Settings',
+        language: 'Language',
+        home_service: 'Home Service',
+        at_salon: 'At Salon',
+        group_booking: 'Group Booking',
+        membership: 'Membership',
+        gift_cards: 'Gift Cards',
+        live_tracking: 'Live Tracking',
+        provider_coming: 'Provider is on the way',
+        arriving_in: 'Arriving in',
+        minutes: 'minutes'
+      }
+    },
+    ur: {
+      code: 'ur',
+      name: 'اردو',
+      dir: 'rtl',
+      strings: {
+        welcome: 'خوش آمدید',
+        home: 'ہوم',
+        search: 'تلاش',
+        bookings: 'بکنگز',
+        profile: 'پروفائل',
+        favorites: 'پسندیدہ',
+        login: 'لاگ ان',
+        register: 'رجسٹر',
+        logout: 'لاگ آؤٹ',
+        email: 'ای میل',
+        password: 'پاس ورڈ',
+        name: 'نام',
+        phone: 'فون',
+        book_now: 'ابھی بک کریں',
+        confirm_booking: 'بکنگ کی تصدیق',
+        select_service: 'سروس منتخب کریں',
+        select_date: 'تاریخ منتخب کریں',
+        select_time: 'وقت منتخب کریں',
+        total: 'کل',
+        payment: 'ادائیگی',
+        cash: 'نقد',
+        card: 'کارڈ',
+        wallet: 'والیٹ',
+        cancel: 'منسوخ',
+        confirm: 'تصدیق',
+        pending: 'زیر التوا',
+        confirmed: 'تصدیق شدہ',
+        completed: 'مکمل',
+        cancelled: 'منسوخ شدہ',
+        near_you: 'آپ کے قریب',
+        featured: 'فیچرڈ',
+        categories: 'کیٹیگریز',
+        services: 'خدمات',
+        reviews: 'جائزے',
+        about: 'تعارف',
+        location: 'مقام',
+        working_hours: 'کام کے اوقات',
+        notifications: 'اطلاعات',
+        messages: 'پیغامات',
+        settings: 'ترتیبات',
+        language: 'زبان',
+        home_service: 'گھر پر سروس',
+        at_salon: 'سیلون میں',
+        group_booking: 'گروپ بکنگ',
+        membership: 'ممبرشپ',
+        gift_cards: 'گفٹ کارڈز',
+        live_tracking: 'لائیو ٹریکنگ',
+        provider_coming: 'سروس پرووائیڈر آ رہا ہے',
+        arriving_in: 'پہنچنے میں',
+        minutes: 'منٹ'
+      }
+    },
+    fr: {
+      code: 'fr',
+      name: 'Français',
+      dir: 'ltr',
+      strings: {
+        welcome: 'Bienvenue',
+        home: 'Accueil',
+        search: 'Rechercher',
+        bookings: 'Réservations',
+        profile: 'Profil',
+        favorites: 'Favoris',
+        login: 'Connexion',
+        register: 'Inscription',
+        logout: 'Déconnexion',
+        email: 'Email',
+        password: 'Mot de passe',
+        name: 'Nom',
+        phone: 'Téléphone',
+        book_now: 'Réserver',
+        confirm_booking: 'Confirmer',
+        select_service: 'Choisir le service',
+        select_date: 'Choisir la date',
+        select_time: 'Choisir l\'heure',
+        total: 'Total',
+        payment: 'Paiement',
+        cash: 'Espèces',
+        card: 'Carte',
+        wallet: 'Portefeuille',
+        cancel: 'Annuler',
+        confirm: 'Confirmer',
+        pending: 'En attente',
+        confirmed: 'Confirmé',
+        completed: 'Terminé',
+        cancelled: 'Annulé',
+        near_you: 'Près de vous',
+        featured: 'En vedette',
+        categories: 'Catégories',
+        services: 'Services',
+        reviews: 'Avis',
+        about: 'À propos',
+        location: 'Emplacement',
+        working_hours: 'Horaires',
+        notifications: 'Notifications',
+        messages: 'Messages',
+        settings: 'Paramètres',
+        language: 'Langue',
+        home_service: 'Service à domicile',
+        at_salon: 'Au salon',
+        group_booking: 'Réservation de groupe',
+        membership: 'Abonnement',
+        gift_cards: 'Cartes cadeaux',
+        live_tracking: 'Suivi en direct',
+        provider_coming: 'Le prestataire arrive',
+        arriving_in: 'Arrivée dans',
+        minutes: 'minutes'
+      }
+    }
+  },
+
+  getCurrentLanguage: () => localStorage.getItem('gb_language') || 'en',
+  setLanguage: (code) => localStorage.setItem('gb_language', code),
+  t: (key) => {
+    const lang = DB.languages[DB.getCurrentLanguage()] || DB.languages.en;
+    return lang.strings[key] || key;
+  },
+  getLanguageDir: () => {
+    const lang = DB.languages[DB.getCurrentLanguage()] || DB.languages.en;
+    return lang.dir;
+  },
+
+  // ========== MODULE 35: HOME SERVICE ==========
+  
+  // Check if provider offers home service
+  providerOffersHomeService: (providerId) => {
+    const provider = DB.getProviderById(providerId);
+    return provider?.homeService || false;
+  },
+
+  // Get home service fee
+  getHomeServiceFee: (providerId) => {
+    const provider = DB.getProviderById(providerId);
+    return provider?.homeServiceFee || 15; // Default €15
+  },
+
+  // Get providers offering home service
+  getHomeServiceProviders: () => {
+    return DB.getProviders().filter(p => p.status === 'approved' && p.homeService);
+  },
+
+  // ========== MODULE 36: GROUP BOOKING ==========
+
+  // Create group booking
+  addGroupBooking: (booking) => {
+    const bookings = DB.getBookings();
+    const groupId = 'group_' + Date.now();
+    const newBookings = [];
+    
+    // Create individual bookings for each person
+    for (let i = 0; i < booking.groupSize; i++) {
+      const individualBooking = {
+        ...booking,
+        id: 'booking_' + Date.now() + '_' + i,
+        groupId,
+        personIndex: i + 1,
+        personName: booking.groupMembers?.[i]?.name || `Person ${i + 1}`,
+        createdAt: new Date().toISOString()
+      };
+      bookings.push(individualBooking);
+      newBookings.push(individualBooking);
+    }
+    
+    DB.set('bookings', bookings);
+    return { groupId, bookings: newBookings };
+  },
+
+  // Get group bookings
+  getGroupBookings: (groupId) => {
+    return DB.getBookings().filter(b => b.groupId === groupId);
+  },
+
+  // Get group discount
+  getGroupDiscount: (groupSize) => {
+    if (groupSize >= 5) return 20; // 20% off for 5+
+    if (groupSize >= 3) return 10; // 10% off for 3-4
+    return 0;
+  },
+
+  // ========== MODULE 37: MEMBERSHIP PLANS ==========
+
+  membershipPlans: [
+    {
+      id: 'basic',
+      name: 'Basic',
+      nameUr: 'بنیادی',
+      nameFr: 'Basique',
+      price: 9.99,
+      period: 'month',
+      color: 'from-gray-400 to-gray-600',
+      features: ['5% off all bookings', 'Priority support', 'Early access to deals'],
+      featuresUr: ['تمام بکنگز پر 5% چھوٹ', 'ترجیحی سپورٹ', 'ڈیلز تک جلد رسائی'],
+      featuresFr: ['5% de réduction', 'Support prioritaire', 'Accès anticipé']
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      nameUr: 'پریمیم',
+      nameFr: 'Premium',
+      price: 19.99,
+      period: 'month',
+      color: 'from-pink-500 to-purple-600',
+      popular: true,
+      features: ['15% off all bookings', 'Free home service', 'VIP support', 'Exclusive offers'],
+      featuresUr: ['تمام بکنگز پر 15% چھوٹ', 'مفت ہوم سروس', 'VIP سپورٹ', 'خصوصی پیشکشیں'],
+      featuresFr: ['15% de réduction', 'Service à domicile gratuit', 'Support VIP', 'Offres exclusives']
+    },
+    {
+      id: 'vip',
+      name: 'VIP',
+      nameUr: 'وی آئی پی',
+      nameFr: 'VIP',
+      price: 49.99,
+      period: 'month',
+      color: 'from-yellow-400 to-orange-500',
+      features: ['25% off all bookings', 'Free home service', 'Personal concierge', 'Free cancellation', 'Gift cards bonus'],
+      featuresUr: ['تمام بکنگز پر 25% چھوٹ', 'مفت ہوم سروس', 'ذاتی کنسیئرج', 'مفت منسوخی', 'گفٹ کارڈ بونس'],
+      featuresFr: ['25% de réduction', 'Service gratuit', 'Concierge personnel', 'Annulation gratuite', 'Bonus cartes cadeaux']
+    }
+  ],
+
+  getMembershipPlans: () => DB.membershipPlans,
+
+  getUserMembership: (userId) => {
+    const user = DB.getUserById(userId);
+    return user?.membership || null;
+  },
+
+  subscribeMembership: (userId, planId) => {
+    const plan = DB.membershipPlans.find(p => p.id === planId);
+    if (!plan) return null;
+    
+    const membership = {
+      planId,
+      planName: plan.name,
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+      status: 'active'
+    };
+    
+    DB.updateUser(userId, { membership });
+    return membership;
+  },
+
+  getMembershipDiscount: (userId) => {
+    const membership = DB.getUserMembership(userId);
+    if (!membership || membership.status !== 'active') return 0;
+    
+    const discounts = { basic: 5, premium: 15, vip: 25 };
+    return discounts[membership.planId] || 0;
+  },
+
+  // ========== MODULE 38: GIFT CARDS ==========
+
+  giftCards: [],
+
+  getGiftCards: () => DB.get('giftcards'),
+
+  purchaseGiftCard: (fromUserId, amount, recipientEmail, message) => {
+    const giftCards = DB.get('giftcards');
+    const code = 'GC' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    const giftCard = {
+      id: 'gc_' + Date.now(),
+      code,
+      amount,
+      balance: amount,
+      fromUserId,
+      recipientEmail,
+      message,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year
+    };
+    
+    giftCards.push(giftCard);
+    DB.set('giftcards', giftCards);
+    
+    // Notify recipient
+    DB.addNotification({
+      userId: null,
+      type: 'promo',
+      title: 'You received a Gift Card! 🎁',
+      message: `Someone sent you a €${amount} gift card! Code: ${code}`,
+      data: { giftCardId: giftCard.id }
+    });
+    
+    return giftCard;
+  },
+
+  redeemGiftCard: (code, userId) => {
+    const giftCards = DB.get('giftcards');
+    const index = giftCards.findIndex(gc => gc.code === code && gc.status === 'active');
+    
+    if (index === -1) return { success: false, error: 'Invalid or expired gift card' };
+    
+    const giftCard = giftCards[index];
+    if (giftCard.balance <= 0) return { success: false, error: 'Gift card has no balance' };
+    
+    // Add balance to user wallet
+    const user = DB.getUserById(userId);
+    const newBalance = (user?.walletBalance || 0) + giftCard.balance;
+    DB.updateUser(userId, { walletBalance: newBalance });
+    
+    // Mark as redeemed
+    giftCards[index].balance = 0;
+    giftCards[index].status = 'redeemed';
+    giftCards[index].redeemedBy = userId;
+    giftCards[index].redeemedAt = new Date().toISOString();
+    DB.set('giftcards', giftCards);
+    
+    return { success: true, amount: giftCard.amount };
+  },
+
+  validateGiftCard: (code) => {
+    const giftCards = DB.get('giftcards');
+    const giftCard = giftCards.find(gc => gc.code === code);
+    
+    if (!giftCard) return { valid: false, error: 'Gift card not found' };
+    if (giftCard.status !== 'active') return { valid: false, error: 'Gift card already used' };
+    if (new Date(giftCard.expiresAt) < new Date()) return { valid: false, error: 'Gift card expired' };
+    
+    return { valid: true, balance: giftCard.balance };
+  },
+
+  // ========== MODULE 39: LIVE TRACKING ==========
+
+  // Simulate provider location (in real app, this would be GPS)
+  updateProviderLocation: (providerId, lat, lng) => {
+    const tracking = DB.get('tracking');
+    const index = tracking.findIndex(t => t.providerId === providerId);
+    
+    const locationData = {
+      providerId,
+      lat,
+      lng,
+      updatedAt: new Date().toISOString()
+    };
+    
+    if (index !== -1) {
+      tracking[index] = locationData;
+    } else {
+      tracking.push(locationData);
+    }
+    
+    DB.set('tracking', tracking);
+    return locationData;
+  },
+
+  getProviderLocation: (providerId) => {
+    const tracking = DB.get('tracking');
+    return tracking.find(t => t.providerId === providerId);
+  },
+
+  // Calculate ETA based on distance
+  calculateETA: (fromLat, fromLng, toLat, toLng) => {
+    const R = 6371; // Earth radius in km
+    const dLat = (toLat - fromLat) * Math.PI / 180;
+    const dLng = (toLng - fromLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(fromLat * Math.PI / 180) * Math.cos(toLat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+    const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    
+    // Assume 30 km/h average speed in city
+    const etaMinutes = Math.round((distance / 30) * 60);
+    return Math.max(etaMinutes, 5); // Minimum 5 minutes
+  },
+
+  // Start live tracking for a booking
+  startTracking: (bookingId) => {
+    const booking = DB.getBookings().find(b => b.id === bookingId);
+    if (!booking || booking.serviceType !== 'home') return null;
+    
+    const provider = DB.getProviderById(booking.providerId);
+    if (!provider) return null;
+    
+    // Simulate provider starting to move
+    DB.updateProviderLocation(provider.id, provider.lat, provider.lng);
+    
+    return {
+      bookingId,
+      providerId: provider.id,
+      providerName: provider.businessName,
+      providerImage: provider.image,
+      status: 'on_the_way'
+    };
+  },
+
+  // Reset all data
+  resetData: () => {
+    const keys = ['users', 'categories', 'services', 'providers', 'bookings', 'favorites', 'locations', 'chats', 'messages', 'notifications', 'reviews', 'coupons', 'giftcards', 'tracking', 'language'];
+    keys.forEach(k => localStorage.removeItem('gb_' + k));
+    DB.init();
+  },
+
+  // ========== MODULE 40-44: IMAGE & MEDIA SYSTEM ==========
+
+  // Convert file to base64
+  fileToBase64: (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  },
+
+  // Compress image before saving
+  compressImage: (base64, maxWidth = 800, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = base64;
+    });
+  },
+
+  // MODULE 40: User Profile Photo
+  updateUserPhoto: async (userId, file) => {
+    try {
+      let base64 = await DB.fileToBase64(file);
+      base64 = await DB.compressImage(base64, 400, 0.8);
+      DB.updateUser(userId, { profilePhoto: base64 });
+      return { success: true, photo: base64 };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  getUserPhoto: (userId) => {
+    const user = DB.getUserById(userId);
+    return user?.profilePhoto || null;
+  },
+
+  // MODULE 41: Provider Photos (Profile + Cover)
+  updateProviderPhoto: async (providerId, file, type = 'profile') => {
+    try {
+      let base64 = await DB.fileToBase64(file);
+      const maxWidth = type === 'cover' ? 1200 : 400;
+      base64 = await DB.compressImage(base64, maxWidth, 0.8);
+      
+      const updateData = type === 'cover' ? { coverImage: base64 } : { image: base64 };
+      DB.updateProvider(providerId, updateData);
+      return { success: true, photo: base64 };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // MODULE 42: Gallery/Portfolio
+  getProviderGallery: (providerId) => {
+    const provider = DB.getProviderById(providerId);
+    return provider?.gallery || [];
+  },
+
+  addToGallery: async (providerId, file, caption = '') => {
+    try {
+      let base64 = await DB.fileToBase64(file);
+      base64 = await DB.compressImage(base64, 800, 0.8);
+      
+      const provider = DB.getProviderById(providerId);
+      const gallery = provider?.gallery || [];
+      
+      const newImage = {
+        id: 'img_' + Date.now(),
+        url: base64,
+        caption,
+        createdAt: new Date().toISOString()
+      };
+      
+      gallery.unshift(newImage);
+      DB.updateProvider(providerId, { gallery: gallery.slice(0, 20) }); // Max 20 images
+      return { success: true, image: newImage };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  removeFromGallery: (providerId, imageId) => {
+    const provider = DB.getProviderById(providerId);
+    const gallery = (provider?.gallery || []).filter(img => img.id !== imageId);
+    DB.updateProvider(providerId, { gallery });
+    return { success: true };
+  },
+
+  // MODULE 43: Service Images
+  updateServiceImage: async (providerId, serviceId, file) => {
+    try {
+      let base64 = await DB.fileToBase64(file);
+      base64 = await DB.compressImage(base64, 400, 0.8);
+      
+      const provider = DB.getProviderById(providerId);
+      const serviceImages = provider?.serviceImages || {};
+      serviceImages[serviceId] = base64;
+      
+      DB.updateProvider(providerId, { serviceImages });
+      return { success: true, image: base64 };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  getServiceImage: (providerId, serviceId) => {
+    const provider = DB.getProviderById(providerId);
+    return provider?.serviceImages?.[serviceId] || null;
+  },
+
+  // MODULE 44: Review Photos
+  addReviewWithPhotos: async (reviewData, files = []) => {
+    try {
+      const photos = [];
+      for (const file of files.slice(0, 5)) { // Max 5 photos per review
+        let base64 = await DB.fileToBase64(file);
+        base64 = await DB.compressImage(base64, 600, 0.7);
+        photos.push({
+          id: 'rimg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          url: base64
+        });
+      }
+      
+      const review = {
+        ...reviewData,
+        photos,
+        id: 'review_' + Date.now(),
+        createdAt: new Date().toISOString()
+      };
+      
+      const reviews = DB.getReviews();
+      reviews.push(review);
+      DB.set('reviews', reviews);
+      
+      // Update provider rating
+      const providerReviews = reviews.filter(r => r.providerId === reviewData.providerId);
+      const avgRating = providerReviews.reduce((sum, r) => sum + r.rating, 0) / providerReviews.length;
+      DB.updateProvider(reviewData.providerId, { 
+        rating: Math.round(avgRating * 10) / 10, 
+        reviewCount: providerReviews.length 
+      });
+      
+      // Notify provider
+      DB.addNotification({
+        providerId: reviewData.providerId,
+        type: 'review_new',
+        title: 'New Review! ⭐',
+        message: `You received a ${reviewData.rating}-star review${photos.length > 0 ? ' with photos' : ''}!`,
+        data: { reviewId: review.id }
+      });
+      
+      return { success: true, review };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Debug
+  debug: () => {
+    console.log('=== GoBeauty DB Debug ===');
+    console.log('Users:', DB.getUsers().length);
+    console.log('Providers:', DB.getProviders().length);
+    console.log('Bookings:', DB.getBookings().length);
+    console.log('Chats:', DB.getChats().length);
+    console.log('Messages:', DB.getMessages().length);
+    console.log('Notifications:', DB.getNotifications().length);
+    console.log('Language:', DB.getCurrentLanguage());
+    console.log('Stats:', DB.getStats());
+  },
+
+  // ============================================
+  // PLAN M: PAYMENT & WALLET SYSTEM (Modules 72-76)
+  // ============================================
+
+  // MODULE 72: Payment Gateway Simulation
+  paymentMethods: {
+    card: { id: 'card', name: 'Credit/Debit Card', icon: 'fa-credit-card', color: 'blue' },
+    wallet: { id: 'wallet', name: 'GoBeauty Wallet', icon: 'fa-wallet', color: 'pink' },
+    cash: { id: 'cash', name: 'Cash on Service', icon: 'fa-money-bill', color: 'green' },
+    split: { id: 'split', name: 'Split Payment', icon: 'fa-scissors', color: 'purple' }
+  },
+
+  // Get user's saved cards
+  getSavedCards: (userId) => {
+    const cards = JSON.parse(localStorage.getItem('gb_cards') || '[]');
+    return cards.filter(c => c.userId === userId);
+  },
+
+  // Add new card
+  addCard: (userId, cardData) => {
+    const cards = JSON.parse(localStorage.getItem('gb_cards') || '[]');
+    const newCard = {
+      id: 'card_' + Date.now(),
+      userId,
+      last4: cardData.number.slice(-4),
+      brand: DB.detectCardBrand(cardData.number),
+      expiry: cardData.expiry,
+      holderName: cardData.holderName,
+      isDefault: cards.filter(c => c.userId === userId).length === 0,
+      createdAt: new Date().toISOString()
+    };
+    cards.push(newCard);
+    localStorage.setItem('gb_cards', JSON.stringify(cards));
+    return newCard;
+  },
+
+  // Detect card brand from number
+  detectCardBrand: (number) => {
+    const n = number.replace(/\s/g, '');
+    if (/^4/.test(n)) return 'Visa';
+    if (/^5[1-5]/.test(n)) return 'Mastercard';
+    if (/^3[47]/.test(n)) return 'Amex';
+    if (/^6(?:011|5)/.test(n)) return 'Discover';
+    return 'Card';
+  },
+
+  // Remove card
+  removeCard: (cardId) => {
+    let cards = JSON.parse(localStorage.getItem('gb_cards') || '[]');
+    cards = cards.filter(c => c.id !== cardId);
+    localStorage.setItem('gb_cards', JSON.stringify(cards));
+  },
+
+  // Set default card
+  setDefaultCard: (userId, cardId) => {
+    const cards = JSON.parse(localStorage.getItem('gb_cards') || '[]');
+    cards.forEach(c => {
+      if (c.userId === userId) c.isDefault = c.id === cardId;
+    });
+    localStorage.setItem('gb_cards', JSON.stringify(cards));
+  },
+
+  // Process payment (simulation)
+  processPayment: async (paymentData) => {
+    // Simulate payment processing delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const { userId, amount, method, cardId, bookingId, description } = paymentData;
+    
+    // Simulate success/failure (95% success rate)
+    const success = Math.random() > 0.05;
+    
+    if (!success) {
+      return { success: false, error: 'Payment declined. Please try again.' };
+    }
+
+    // Create transaction record
+    const transaction = {
+      id: 'txn_' + Date.now(),
+      userId,
+      amount,
+      method,
+      cardId,
+      bookingId,
+      description,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+
+    // Save transaction
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    transactions.push(transaction);
+    localStorage.setItem('gb_transactions', JSON.stringify(transactions));
+
+    // If card payment, deduct nothing (external payment)
+    // If wallet payment, deduct from wallet
+    if (method === 'wallet') {
+      DB.deductFromWallet(userId, amount, `Payment for booking`, bookingId);
+    }
+
+    return { success: true, transaction };
+  },
+
+  // MODULE 73: Wallet System
+  getWallet: (userId) => {
+    const wallets = JSON.parse(localStorage.getItem('gb_wallets') || '[]');
+    let wallet = wallets.find(w => w.userId === userId);
+    
+    if (!wallet) {
+      wallet = {
+        userId,
+        balance: 0,
+        currency: 'EUR',
+        createdAt: new Date().toISOString()
+      };
+      wallets.push(wallet);
+      localStorage.setItem('gb_wallets', JSON.stringify(wallets));
+    }
+    
+    return wallet;
+  },
+
+  // Top up wallet
+  topUpWallet: async (userId, amount, paymentMethod, cardId = null) => {
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const wallets = JSON.parse(localStorage.getItem('gb_wallets') || '[]');
+    const idx = wallets.findIndex(w => w.userId === userId);
+    
+    if (idx === -1) {
+      wallets.push({ userId, balance: amount, currency: 'EUR', createdAt: new Date().toISOString() });
+    } else {
+      wallets[idx].balance += amount;
+    }
+    
+    localStorage.setItem('gb_wallets', JSON.stringify(wallets));
+
+    // Record transaction
+    const transaction = {
+      id: 'txn_' + Date.now(),
+      userId,
+      type: 'topup',
+      amount,
+      method: paymentMethod,
+      cardId,
+      description: `Wallet top-up +€${amount}`,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    transactions.push(transaction);
+    localStorage.setItem('gb_transactions', JSON.stringify(transactions));
+
+    // Notify user
+    DB.addNotification({
+      userId,
+      type: 'payment',
+      title: 'Wallet Top-up Successful! 💰',
+      message: `€${amount} has been added to your wallet.`
+    });
+
+    return { success: true, newBalance: DB.getWallet(userId).balance };
+  },
+
+  // Deduct from wallet
+  deductFromWallet: (userId, amount, description, bookingId = null) => {
+    const wallets = JSON.parse(localStorage.getItem('gb_wallets') || '[]');
+    const idx = wallets.findIndex(w => w.userId === userId);
+    
+    if (idx === -1 || wallets[idx].balance < amount) {
+      return { success: false, error: 'Insufficient balance' };
+    }
+
+    wallets[idx].balance -= amount;
+    localStorage.setItem('gb_wallets', JSON.stringify(wallets));
+
+    // Record transaction
+    const transaction = {
+      id: 'txn_' + Date.now(),
+      userId,
+      type: 'payment',
+      amount: -amount,
+      method: 'wallet',
+      bookingId,
+      description,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    transactions.push(transaction);
+    localStorage.setItem('gb_transactions', JSON.stringify(transactions));
+
+    return { success: true, newBalance: wallets[idx].balance };
+  },
+
+  // Add to wallet (refunds, rewards)
+  addToWallet: (userId, amount, description, type = 'credit') => {
+    const wallets = JSON.parse(localStorage.getItem('gb_wallets') || '[]');
+    const idx = wallets.findIndex(w => w.userId === userId);
+    
+    if (idx === -1) {
+      wallets.push({ userId, balance: amount, currency: 'EUR', createdAt: new Date().toISOString() });
+    } else {
+      wallets[idx].balance += amount;
+    }
+    
+    localStorage.setItem('gb_wallets', JSON.stringify(wallets));
+
+    // Record transaction
+    const transaction = {
+      id: 'txn_' + Date.now(),
+      userId,
+      type,
+      amount,
+      method: 'wallet',
+      description,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    transactions.push(transaction);
+    localStorage.setItem('gb_transactions', JSON.stringify(transactions));
+
+    return { success: true, newBalance: DB.getWallet(userId).balance };
+  },
+
+  // MODULE 74: Payment History & Transactions
+  getTransactions: (userId) => {
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    return transactions
+      .filter(t => t.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  // Get transaction by ID
+  getTransactionById: (txnId) => {
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    return transactions.find(t => t.id === txnId);
+  },
+
+  // Get transactions summary
+  getTransactionsSummary: (userId) => {
+    const transactions = DB.getTransactions(userId);
+    const now = new Date();
+    const thisMonth = transactions.filter(t => {
+      const d = new Date(t.createdAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+
+    return {
+      totalSpent: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      totalTopUp: transactions.filter(t => t.type === 'topup').reduce((sum, t) => sum + t.amount, 0),
+      totalRefunds: transactions.filter(t => t.type === 'refund').reduce((sum, t) => sum + t.amount, 0),
+      thisMonthSpent: thisMonth.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      transactionCount: transactions.length
+    };
+  },
+
+  // MODULE 75: Refund System
+  processRefund: async (bookingId, reason = 'Customer requested') => {
+    const bookings = DB.getBookings();
+    const booking = bookings.find(b => b.id === bookingId);
+    
+    if (!booking) {
+      return { success: false, error: 'Booking not found' };
+    }
+
+    if (booking.refunded) {
+      return { success: false, error: 'Already refunded' };
+    }
+
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Calculate refund amount (full refund if cancelled 24h before, 50% otherwise)
+    const bookingDate = new Date(booking.date + 'T' + booking.time);
+    const hoursUntil = (bookingDate - new Date()) / (1000 * 60 * 60);
+    const refundPercent = hoursUntil >= 24 ? 100 : 50;
+    const refundAmount = Math.round(booking.price * (refundPercent / 100));
+
+    // Add refund to wallet
+    DB.addToWallet(booking.userId, refundAmount, `Refund for ${booking.serviceName} (${refundPercent}%)`, 'refund');
+
+    // Update booking
+    const idx = bookings.findIndex(b => b.id === bookingId);
+    bookings[idx].refunded = true;
+    bookings[idx].refundAmount = refundAmount;
+    bookings[idx].refundReason = reason;
+    bookings[idx].refundedAt = new Date().toISOString();
+    DB.set('bookings', bookings);
+
+    // Notify user
+    DB.addNotification({
+      userId: booking.userId,
+      type: 'payment',
+      title: 'Refund Processed! 💸',
+      message: `€${refundAmount} has been refunded to your wallet.`
+    });
+
+    return { success: true, refundAmount, refundPercent };
+  },
+
+  // Check if booking is refundable
+  isRefundable: (bookingId) => {
+    const booking = DB.getBookings().find(b => b.id === bookingId);
+    if (!booking || booking.refunded || booking.status === 'completed') return false;
+    return ['pending', 'confirmed', 'cancelled'].includes(booking.status);
+  },
+
+  // MODULE 76: Split Payment
+  processSplitPayment: async (paymentData) => {
+    const { userId, totalAmount, walletAmount, cardAmount, cardId, bookingId, description } = paymentData;
+    
+    // Check wallet balance
+    const wallet = DB.getWallet(userId);
+    if (wallet.balance < walletAmount) {
+      return { success: false, error: 'Insufficient wallet balance' };
+    }
+
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Deduct from wallet
+    if (walletAmount > 0) {
+      DB.deductFromWallet(userId, walletAmount, `Split payment (wallet portion)`, bookingId);
+    }
+
+    // Process card payment (simulated)
+    if (cardAmount > 0) {
+      const cardResult = await DB.processPayment({
+        userId,
+        amount: cardAmount,
+        method: 'card',
+        cardId,
+        bookingId,
+        description: `Split payment (card portion)`
+      });
+
+      if (!cardResult.success) {
+        // Refund wallet portion if card fails
+        DB.addToWallet(userId, walletAmount, 'Refund - card payment failed', 'refund');
+        return { success: false, error: 'Card payment failed' };
+      }
+    }
+
+    // Record split payment
+    const transaction = {
+      id: 'txn_' + Date.now(),
+      userId,
+      type: 'split_payment',
+      amount: totalAmount,
+      walletAmount,
+      cardAmount,
+      method: 'split',
+      cardId,
+      bookingId,
+      description,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+    transactions.push(transaction);
+    localStorage.setItem('gb_transactions', JSON.stringify(transactions));
+
+    return { success: true, transaction };
+  },
+
+  // Provider Earnings & Payouts
+  getProviderEarnings: (providerId) => {
+    const bookings = DB.getBookings().filter(b => b.providerId === providerId && b.status === 'completed');
+    const payouts = JSON.parse(localStorage.getItem('gb_payouts') || '[]').filter(p => p.providerId === providerId);
+    
+    const totalEarnings = bookings.reduce((sum, b) => sum + (b.price || 0), 0);
+    const totalPaidOut = payouts.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
+    const pendingPayout = totalEarnings - totalPaidOut;
+    
+    return {
+      totalEarnings,
+      totalPaidOut,
+      pendingPayout,
+      bookingsCount: bookings.length,
+      payouts
+    };
+  },
+
+  // Request payout
+  requestPayout: (providerId, amount, method = 'bank') => {
+    const earnings = DB.getProviderEarnings(providerId);
+    
+    if (amount > earnings.pendingPayout) {
+      return { success: false, error: 'Insufficient balance' };
+    }
+
+    const payout = {
+      id: 'payout_' + Date.now(),
+      providerId,
+      amount,
+      method,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    const payouts = JSON.parse(localStorage.getItem('gb_payouts') || '[]');
+    payouts.push(payout);
+    localStorage.setItem('gb_payouts', JSON.stringify(payouts));
+
+    // Notify provider
+    const provider = DB.getProviderById(providerId);
+    DB.addNotification({
+      providerId,
+      type: 'payment',
+      title: 'Payout Requested! 💰',
+      message: `Your payout of €${amount} is being processed.`
+    });
+
+    return { success: true, payout };
+  }
+};
+
+// Initialize on load
+DB.init();
+if (!localStorage.getItem('gb_giftcards')) localStorage.setItem('gb_giftcards', JSON.stringify([]));
+if (!localStorage.getItem('gb_tracking')) localStorage.setItem('gb_tracking', JSON.stringify([]));
+if (!localStorage.getItem('gb_cards')) localStorage.setItem('gb_cards', JSON.stringify([]));
+if (!localStorage.getItem('gb_wallets')) localStorage.setItem('gb_wallets', JSON.stringify([]));
+if (!localStorage.getItem('gb_transactions')) localStorage.setItem('gb_transactions', JSON.stringify([]));
+if (!localStorage.getItem('gb_payouts')) localStorage.setItem('gb_payouts', JSON.stringify([]));
+console.log('GoBeauty DB v5.0 - With Payment System initialized');

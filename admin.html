@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoBeauty Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="database.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; width: 100%; }
+    body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+    .sidebar { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
+    .sidebar-item:hover { background: rgba(255,255,255,0.05); }
+    .sidebar-item.active { background: linear-gradient(90deg, rgba(236,72,153,0.2) 0%, transparent 100%); border-left: 3px solid #ec4899; }
+    .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
+    .gradient-primary { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); }
+    .gradient-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .gradient-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .gradient-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .gradient-info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: white; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+    .input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: all 0.2s; }
+    .input:focus { border-color: #ec4899; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-info { background: #dbeafe; color: #1e40af; }
+    .badge-purple { background: #f3e8ff; color: #7c3aed; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 14px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; background: #f8fafc; }
+    td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    tr:hover { background: #fafafa; }
+    .toggle { width: 48px; height: 26px; border-radius: 13px; position: relative; cursor: pointer; transition: all 0.3s; border: none; }
+    .toggle.on { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .toggle.off { background: #cbd5e1; }
+    .toggle-circle { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: white; top: 2px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .toggle.on .toggle-circle { left: 24px; }
+    .toggle.off .toggle-circle { left: 2px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .anim-fade { animation: fadeIn 0.3s ease forwards; }
+    .spinner { animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// App Settings Functions
+const getAppSettings = () => {
+  const defaults = {
+    appName: 'GoBeauty',
+    tagline: 'Beauty at your fingertips',
+    primaryColor: '#ec4899',
+    secondaryColor: '#8b5cf6',
+    accentColor: '#10b981',
+    customerFeatures: { wallet: true, reviews: true, chat: true, homeService: true, favorites: true, notifications: true, offers: true, membership: true, giftCards: true, map: true, search: true, filters: true },
+    proFeatures: { earnings: true, calendar: true, analytics: true, chat: true, notifications: true, gallery: true, services: true, reviews: true, blockSlots: true, withdraw: true },
+    customerNav: { home: true, map: true, bookings: true, favorites: true, profile: true },
+    proNav: { dashboard: true, bookings: true, services: true, reviews: true, earnings: true, profile: true },
+    uiSettings: { showDistance: true, showRating: true, showPrice: true, showVerifiedBadge: true, showNewBadge: true }
+  };
+  try {
+    const saved = localStorage.getItem('gb_app_settings');
+    return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+  } catch (e) { return defaults; }
+};
+
+const saveAppSettings = (settings) => {
+  localStorage.setItem('gb_app_settings', JSON.stringify(settings));
+};
+
+// Toggle Component
+const Toggle = ({ checked, onChange }) => (
+  <button 
+    type="button"
+    onClick={() => onChange(!checked)} 
+    className={`toggle ${checked ? 'on' : 'off'}`}
+  >
+    <div className="toggle-circle"></div>
+  </button>
+);
+
+// Toast Component
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+  
+  return (
+    <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white ${type === 'success' ? 'gradient-success' : type === 'error' ? 'gradient-danger' : 'gradient-info'}`}>
+      <i className={`fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}`}></i>
+      <span className="font-medium">{message}</span>
+    </div>
+  );
+};
+
+// Login Screen
+const LoginScreen = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 800));
+    
+    const user = DB.getUserByEmail(email);
+    if (!user || user.role !== 'admin') {
+      setError('Invalid admin credentials');
+      setLoading(false);
+      return;
+    }
+    if (user.password !== password) {
+      setError('Incorrect password');
+      setLoading(false);
+      return;
+    }
+    onLogin(user);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+      <div className="w-full max-w-md anim-fade">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <i className="fa-solid fa-spa text-3xl text-white"></i>
+          </div>
+          <h1 className="text-3xl font-bold text-white">GoBeauty</h1>
+          <p className="text-gray-400 mt-2">Admin Control Panel</p>
+        </div>
+        
+        <div className="card p-8">
+          <h2 className="text-xl font-bold mb-6">Welcome Back</h2>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
+              <i className="fa-solid fa-exclamation-circle mr-2"></i>{error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@gobeauty.com" required className="input" />
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="input" />
+            </div>
+            <button type="submit" disabled={loading} className="w-full btn btn-primary justify-center py-3">
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div> : 'Sign In'}
+            </button>
+          </form>
+          
+          <p className="text-center text-gray-400 text-sm mt-6">Demo: admin@gobeauty.com / admin123</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main Admin Panel
+const AdminPanel = ({ user, onLogout }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [toasts, setToasts] = useState([]);
+  const [refresh, setRefresh] = useState(0);
+  const [appSettings, setAppSettings] = useState(getAppSettings());
+
+  // Form states
+  const [editCat, setEditCat] = useState(null);
+  const [catName, setCatName] = useState('');
+  const [catIcon, setCatIcon] = useState('spa');
+  const [catStatus, setCatStatus] = useState('active');
+  
+  const [editSrv, setEditSrv] = useState(null);
+  const [srvName, setSrvName] = useState('');
+  const [srvCategory, setSrvCategory] = useState('');
+  const [srvPrice, setSrvPrice] = useState(0);
+  const [srvDuration, setSrvDuration] = useState(30);
+  
+  const [notifTarget, setNotifTarget] = useState('all');
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+
+  // Data
+  const [data, setData] = useState({ users: [], providers: [], categories: [], services: [], bookings: [] });
+
+  const loadData = () => {
+    setData({
+      users: DB.getUsers().filter(u => u.role !== 'admin'),
+      providers: DB.getProviders(),
+      categories: DB.getCategories(),
+      services: DB.getServices(),
+      bookings: DB.getBookings()
+    });
+  };
+
+  useEffect(() => { loadData(); }, [refresh]);
+
+  const toast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, message, type }]);
+  };
+
+  const updateSettings = (key, value) => {
+    const newSettings = { ...appSettings, [key]: value };
+    setAppSettings(newSettings);
+    saveAppSettings(newSettings);
+    toast('Settings saved!');
+  };
+
+  const { users, providers, categories, services, bookings } = data;
+
+  const menuItems = [
+    { id: 'dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
+    { id: 'appearance', icon: 'fa-palette', label: 'Appearance' },
+    { id: 'features', icon: 'fa-toggle-on', label: 'Features' },
+    { id: 'navigation', icon: 'fa-bars', label: 'Navigation' },
+    { id: 'categories', icon: 'fa-tags', label: 'Categories' },
+    { id: 'services', icon: 'fa-concierge-bell', label: 'Services' },
+    { id: 'users', icon: 'fa-users', label: 'Users' },
+    { id: 'providers', icon: 'fa-store', label: 'Providers' },
+    { id: 'bookings', icon: 'fa-calendar-check', label: 'Bookings' },
+    { id: 'finance', icon: 'fa-wallet', label: 'Finance' },
+    { id: 'notifications', icon: 'fa-bell', label: 'Notifications' }
+  ];
+
+  const iconOptions = [
+    { id: 'spa', name: 'Spa' }, { id: 'scissors', name: 'Hair' }, { id: 'hand-sparkles', name: 'Nails' },
+    { id: 'wand-magic-sparkles', name: 'Makeup' }, { id: 'face-smile-beam', name: 'Facial' },
+    { id: 'heart', name: 'Wellness' }, { id: 'leaf', name: 'Natural' }, { id: 'gem', name: 'Luxury' },
+    { id: 'star', name: 'Premium' }, { id: 'fire', name: 'Trending' }
+  ];
+
+  // Page Components
+  const DashboardPage = () => (
+    <div className="space-y-6 anim-fade">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="gradient-primary rounded-2xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-80">Total Users</p>
+              <p className="text-3xl font-bold mt-1">{users.length}</p>
+            </div>
+            <i className="fa-solid fa-users text-3xl opacity-50"></i>
+          </div>
+        </div>
+        <div className="gradient-info rounded-2xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-80">Providers</p>
+              <p className="text-3xl font-bold mt-1">{providers.length}</p>
+            </div>
+            <i className="fa-solid fa-store text-3xl opacity-50"></i>
+          </div>
+        </div>
+        <div className="gradient-success rounded-2xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-80">Bookings</p>
+              <p className="text-3xl font-bold mt-1">{bookings.length}</p>
+            </div>
+            <i className="fa-solid fa-calendar-check text-3xl opacity-50"></i>
+          </div>
+        </div>
+        <div className="gradient-warning rounded-2xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-80">Revenue</p>
+              <p className="text-3xl font-bold mt-1">€{bookings.reduce((s, b) => s + (b.price || 0), 0)}</p>
+            </div>
+            <i className="fa-solid fa-euro-sign text-3xl opacity-50"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div className="card p-6">
+        <h2 className="font-bold mb-4">Recent Bookings</h2>
+        <table>
+          <thead>
+            <tr><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th>Amount</th></tr>
+          </thead>
+          <tbody>
+            {bookings.slice(0, 5).map(b => (
+              <tr key={b.id}>
+                <td>{users.find(u => u.id === b.userId)?.name || 'Customer'}</td>
+                <td>{b.serviceName}</td>
+                <td>{b.date}</td>
+                <td><span className={`badge ${b.status === 'completed' ? 'badge-success' : 'badge-warning'}`}>{b.status}</span></td>
+                <td className="font-bold">€{b.price || 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const AppearancePage = () => (
+    <div className="space-y-6 anim-fade">
+      <h1 className="text-2xl font-bold">Appearance & Branding</h1>
+      
+      <div className="card p-6">
+        <h2 className="font-bold mb-4"><i className="fa-solid fa-info-circle mr-2 text-pink-500"></i>App Info</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">App Name</label>
+            <input type="text" value={appSettings.appName} onChange={(e) => updateSettings('appName', e.target.value)} className="input" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Tagline</label>
+            <input type="text" value={appSettings.tagline} onChange={(e) => updateSettings('tagline', e.target.value)} className="input" />
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="font-bold mb-4"><i className="fa-solid fa-palette mr-2 text-pink-500"></i>Theme Colors</h2>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Primary Color</label>
+            <div className="flex gap-2">
+              <input type="color" value={appSettings.primaryColor} onChange={(e) => updateSettings('primaryColor', e.target.value)} className="w-12 h-12 rounded-xl cursor-pointer border-0" />
+              <input type="text" value={appSettings.primaryColor} onChange={(e) => updateSettings('primaryColor', e.target.value)} className="input flex-1" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Secondary Color</label>
+            <div className="flex gap-2">
+              <input type="color" value={appSettings.secondaryColor} onChange={(e) => updateSettings('secondaryColor', e.target.value)} className="w-12 h-12 rounded-xl cursor-pointer border-0" />
+              <input type="text" value={appSettings.secondaryColor} onChange={(e) => updateSettings('secondaryColor', e.target.value)} className="input flex-1" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Accent Color</label>
+            <div className="flex gap-2">
+              <input type="color" value={appSettings.accentColor} onChange={(e) => updateSettings('accentColor', e.target.value)} className="w-12 h-12 rounded-xl cursor-pointer border-0" />
+              <input type="text" value={appSettings.accentColor} onChange={(e) => updateSettings('accentColor', e.target.value)} className="input flex-1" />
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+          <p className="text-sm text-gray-500 mb-3">Preview:</p>
+          <button style={{ background: `linear-gradient(135deg, ${appSettings.primaryColor}, ${appSettings.secondaryColor})` }} className="px-6 py-3 rounded-xl text-white font-bold mr-2">Primary Button</button>
+          <button style={{ background: appSettings.accentColor }} className="px-6 py-3 rounded-xl text-white font-bold">Accent Button</button>
+        </div>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="font-bold mb-4"><i className="fa-solid fa-eye mr-2 text-pink-500"></i>UI Display Options</h2>
+        <div className="space-y-4">
+          {[
+            { key: 'showDistance', label: 'Show Distance on Cards' },
+            { key: 'showRating', label: 'Show Rating Stars' },
+            { key: 'showPrice', label: 'Show Price Range' },
+            { key: 'showVerifiedBadge', label: 'Show Verified Badge' },
+            { key: 'showNewBadge', label: 'Show New Provider Badge' }
+          ].map(opt => (
+            <div key={opt.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <span className="font-medium">{opt.label}</span>
+              <Toggle checked={appSettings.uiSettings?.[opt.key] !== false} onChange={(v) => updateSettings('uiSettings', { ...appSettings.uiSettings, [opt.key]: v })} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const FeaturesPage = () => (
+    <div className="space-y-6 anim-fade">
+      <h1 className="text-2xl font-bold">Feature Management</h1>
+      
+      <div className="card p-6">
+        <h2 className="font-bold mb-4"><i className="fa-solid fa-user mr-2 text-blue-500"></i>Customer App Features</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { key: 'wallet', label: 'Wallet & Payments', icon: 'fa-wallet' },
+            { key: 'reviews', label: 'Reviews & Ratings', icon: 'fa-star' },
+            { key: 'chat', label: 'Chat with Provider', icon: 'fa-comments' },
+            { key: 'homeService', label: 'Home Service', icon: 'fa-house' },
+            { key: 'favorites', label: 'Favorites List', icon: 'fa-heart' },
+            { key: 'notifications', label: 'Notifications', icon: 'fa-bell' },
+            { key: 'offers', label: 'Offers & Coupons', icon: 'fa-ticket' },
+            { key: 'membership', label: 'Membership', icon: 'fa-crown' },
+            { key: 'map', label: 'Map View', icon: 'fa-map' },
+            { key: 'filters', label: 'Advanced Filters', icon: 'fa-filter' }
+          ].map(f => (
+            <div key={f.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
+                  <i className={`fa-solid ${f.icon}`}></i>
+                </div>
+                <span className="font-medium text-sm">{f.label}</span>
+              </div>
+              <Toggle checked={appSettings.customerFeatures?.[f.key] !== false} onChange={(v) => updateSettings('customerFeatures', { ...appSettings.customerFeatures, [f.key]: v })} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="font-bold mb-4"><i className="fa-solid fa-briefcase mr-2 text-purple-500"></i>Professional App Features</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { key: 'earnings', label: 'Earnings Dashboard', icon: 'fa-chart-line' },
+            { key: 'calendar', label: 'Booking Calendar', icon: 'fa-calendar' },
+            { key: 'analytics', label: 'Analytics', icon: 'fa-chart-bar' },
+            { key: 'chat', label: 'Customer Chat', icon: 'fa-comments' },
+            { key: 'notifications', label: 'Notifications', icon: 'fa-bell' },
+            { key: 'gallery', label: 'Photo Gallery', icon: 'fa-images' },
+            { key: 'services', label: 'Service Management', icon: 'fa-list' },
+            { key: 'reviews', label: 'Review Responses', icon: 'fa-star' },
+            { key: 'blockSlots', label: 'Block Time Slots', icon: 'fa-ban' },
+            { key: 'withdraw', label: 'Withdraw Earnings', icon: 'fa-money-bill-transfer' }
+          ].map(f => (
+            <div key={f.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
+                  <i className={`fa-solid ${f.icon}`}></i>
+                </div>
+                <span className="font-medium text-sm">{f.label}</span>
+              </div>
+              <Toggle checked={appSettings.proFeatures?.[f.key] !== false} onChange={(v) => updateSettings('proFeatures', { ...appSettings.proFeatures, [f.key]: v })} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const NavigationPage = () => (
+    <div className="space-y-6 anim-fade">
+      <h1 className="text-2xl font-bold">Navigation Settings</h1>
+      
+      <div className="card p-6">
+        <h2 className="font-bold mb-4">Customer Bottom Navigation</h2>
+        <div className="space-y-3">
+          {[
+            { key: 'home', label: 'Home', icon: 'fa-house' },
+            { key: 'map', label: 'Map', icon: 'fa-map-location-dot' },
+            { key: 'bookings', label: 'Bookings', icon: 'fa-calendar-check' },
+            { key: 'favorites', label: 'Favorites', icon: 'fa-heart' },
+            { key: 'profile', label: 'Profile', icon: 'fa-user' }
+          ].map(n => (
+            <div key={n.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <i className={`fa-solid ${n.icon} text-gray-500 w-5`}></i>
+                <span className="font-medium">{n.label}</span>
+              </div>
+              <Toggle checked={appSettings.customerNav?.[n.key] !== false} onChange={(v) => updateSettings('customerNav', { ...appSettings.customerNav, [n.key]: v })} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="font-bold mb-4">Professional Bottom Navigation</h2>
+        <div className="space-y-3">
+          {[
+            { key: 'dashboard', label: 'Dashboard', icon: 'fa-house' },
+            { key: 'bookings', label: 'Bookings', icon: 'fa-calendar-check' },
+            { key: 'services', label: 'Services', icon: 'fa-concierge-bell' },
+            { key: 'reviews', label: 'Reviews', icon: 'fa-star' },
+            { key: 'earnings', label: 'Earnings', icon: 'fa-wallet' },
+            { key: 'profile', label: 'Profile', icon: 'fa-user' }
+          ].map(n => (
+            <div key={n.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <i className={`fa-solid ${n.icon} text-gray-500 w-5`}></i>
+                <span className="font-medium">{n.label}</span>
+              </div>
+              <Toggle checked={appSettings.proNav?.[n.key] !== false} onChange={(v) => updateSettings('proNav', { ...appSettings.proNav, [n.key]: v })} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const CategoriesPage = () => {
+    const handleSave = () => {
+      if (!catName.trim()) { toast('Enter category name', 'error'); return; }
+      let newCats;
+      if (editCat) {
+        newCats = categories.map(c => c.id === editCat.id ? { ...c, name: catName, icon: catIcon, status: catStatus } : c);
+      } else {
+        newCats = [...categories, { id: 'cat_' + Date.now(), name: catName, icon: catIcon, status: catStatus }];
+      }
+      localStorage.setItem('gb_categories', JSON.stringify(newCats));
+      setCatName(''); setCatIcon('spa'); setCatStatus('active'); setEditCat(null);
+      setRefresh(r => r + 1);
+      toast(editCat ? 'Category updated!' : 'Category added!');
+    };
+
+    const handleEdit = (cat) => { setEditCat(cat); setCatName(cat.name); setCatIcon(cat.icon); setCatStatus(cat.status); };
+    const handleDelete = (id) => { localStorage.setItem('gb_categories', JSON.stringify(categories.filter(c => c.id !== id))); setRefresh(r => r + 1); toast('Category deleted'); };
+    const handleCancel = () => { setEditCat(null); setCatName(''); setCatIcon('spa'); setCatStatus('active'); };
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Categories ({categories.length})</h1>
+        
+        <div className="card p-6">
+          <h2 className="font-bold mb-4">{editCat ? 'Edit' : 'Add New'} Category</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Category Name</label>
+              <input type="text" value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="e.g., Spa & Massage" className="input" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Icon</label>
+              <select value={catIcon} onChange={(e) => setCatIcon(e.target.value)} className="input">
+                {iconOptions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <select value={catStatus} onChange={(e) => setCatStatus(e.target.value)} className="input">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} className="btn btn-primary"><i className="fa-solid fa-save"></i>{editCat ? 'Update' : 'Add Category'}</button>
+            {editCat && <button onClick={handleCancel} className="btn btn-secondary">Cancel</button>}
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <table>
+            <thead><tr><th>Icon</th><th>Name</th><th>Services</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              {categories.map(c => (
+                <tr key={c.id}>
+                  <td><div className="w-10 h-10 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center"><i className={`fa-solid fa-${c.icon}`}></i></div></td>
+                  <td className="font-bold">{c.name}</td>
+                  <td>{services.filter(s => s.categoryId === c.id).length}</td>
+                  <td><span className={`badge ${c.status === 'active' ? 'badge-success' : 'badge-danger'}`}>{c.status}</span></td>
+                  <td>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(c)} className="btn btn-secondary py-2 px-3"><i className="fa-solid fa-pen"></i></button>
+                      <button onClick={() => handleDelete(c.id)} className="btn btn-danger py-2 px-3"><i className="fa-solid fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const ServicesPage = () => {
+    const handleSave = () => {
+      if (!srvName.trim() || !srvCategory) { toast('Fill all fields', 'error'); return; }
+      let newSrvs;
+      if (editSrv) {
+        newSrvs = services.map(s => s.id === editSrv.id ? { ...s, name: srvName, categoryId: srvCategory, basePrice: Number(srvPrice), duration: Number(srvDuration) } : s);
+      } else {
+        newSrvs = [...services, { id: 'srv_' + Date.now(), name: srvName, categoryId: srvCategory, basePrice: Number(srvPrice), duration: Number(srvDuration) }];
+      }
+      localStorage.setItem('gb_services', JSON.stringify(newSrvs));
+      setSrvName(''); setSrvCategory(''); setSrvPrice(0); setSrvDuration(30); setEditSrv(null);
+      setRefresh(r => r + 1);
+      toast(editSrv ? 'Service updated!' : 'Service added!');
+    };
+
+    const handleEdit = (srv) => { setEditSrv(srv); setSrvName(srv.name); setSrvCategory(srv.categoryId); setSrvPrice(srv.basePrice); setSrvDuration(srv.duration); };
+    const handleDelete = (id) => { localStorage.setItem('gb_services', JSON.stringify(services.filter(s => s.id !== id))); setRefresh(r => r + 1); toast('Service deleted'); };
+    const handleCancel = () => { setEditSrv(null); setSrvName(''); setSrvCategory(''); setSrvPrice(0); setSrvDuration(30); };
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Services ({services.length})</h1>
+        
+        <div className="card p-6">
+          <h2 className="font-bold mb-4">{editSrv ? 'Edit' : 'Add New'} Service</h2>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Service Name</label>
+              <input type="text" value={srvName} onChange={(e) => setSrvName(e.target.value)} placeholder="e.g., Deep Tissue Massage" className="input" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Category</label>
+              <select value={srvCategory} onChange={(e) => setSrvCategory(e.target.value)} className="input">
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Price (€)</label>
+              <input type="number" value={srvPrice} onChange={(e) => setSrvPrice(e.target.value)} className="input" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Duration (mins)</label>
+              <input type="number" value={srvDuration} onChange={(e) => setSrvDuration(e.target.value)} className="input" />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} className="btn btn-primary"><i className="fa-solid fa-save"></i>{editSrv ? 'Update' : 'Add Service'}</button>
+            {editSrv && <button onClick={handleCancel} className="btn btn-secondary">Cancel</button>}
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <table>
+            <thead><tr><th>Service</th><th>Category</th><th>Price</th><th>Duration</th><th>Actions</th></tr></thead>
+            <tbody>
+              {services.map(s => (
+                <tr key={s.id}>
+                  <td className="font-bold">{s.name}</td>
+                  <td><span className="badge badge-purple">{categories.find(c => c.id === s.categoryId)?.name || 'N/A'}</span></td>
+                  <td className="font-bold text-green-600">€{s.basePrice}</td>
+                  <td>{s.duration} mins</td>
+                  <td>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(s)} className="btn btn-secondary py-2 px-3"><i className="fa-solid fa-pen"></i></button>
+                      <button onClick={() => handleDelete(s.id)} className="btn btn-danger py-2 px-3"><i className="fa-solid fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const UsersPage = () => {
+    const toggleStatus = (userId) => {
+      const allUsers = DB.getUsers();
+      const idx = allUsers.findIndex(u => u.id === userId);
+      if (idx > -1) {
+        allUsers[idx].status = allUsers[idx].status === 'suspended' ? 'active' : 'suspended';
+        localStorage.setItem('gb_users', JSON.stringify(allUsers));
+        setRefresh(r => r + 1);
+        toast('User status updated');
+      }
+    };
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Users ({users.length})</h1>
+        <div className="card overflow-hidden">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center font-bold">{u.name?.charAt(0) || 'U'}</div>
+                      <span className="font-medium">{u.name}</span>
+                    </div>
+                  </td>
+                  <td>{u.email}</td>
+                  <td><span className={`badge ${u.role === 'professional' ? 'badge-purple' : 'badge-info'}`}>{u.role}</span></td>
+                  <td><span className={`badge ${u.status !== 'suspended' ? 'badge-success' : 'badge-danger'}`}>{u.status || 'active'}</span></td>
+                  <td>
+                    <button onClick={() => toggleStatus(u.id)} className={`btn ${u.status !== 'suspended' ? 'btn-danger' : 'btn-success'} py-2 px-3`}>
+                      <i className={`fa-solid ${u.status !== 'suspended' ? 'fa-ban' : 'fa-check'}`}></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const ProvidersPage = () => {
+    const approve = (id) => { DB.updateProvider(id, { status: 'approved' }); setRefresh(r => r + 1); toast('Provider approved!'); };
+    const toggleStatus = (id, status) => { DB.updateProvider(id, { status: status === 'approved' ? 'suspended' : 'approved' }); setRefresh(r => r + 1); };
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Providers ({providers.length})</h1>
+        <div className="card overflow-hidden">
+          <table>
+            <thead><tr><th>Business</th><th>Category</th><th>Rating</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              {providers.map(p => (
+                <tr key={p.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <img src={p.image} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                      <div>
+                        <p className="font-bold">{p.businessName}</p>
+                        <p className="text-xs text-gray-500">{p.address?.slice(0, 30)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className="badge badge-purple">{categories.find(c => c.id === p.categoryId)?.name || 'N/A'}</span></td>
+                  <td><span className="text-yellow-500"><i className="fa-solid fa-star mr-1"></i>{p.rating || 'New'}</span></td>
+                  <td><span className={`badge ${p.status === 'approved' ? 'badge-success' : p.status === 'pending' ? 'badge-warning' : 'badge-danger'}`}>{p.status}</span></td>
+                  <td>
+                    <div className="flex gap-2">
+                      {p.status === 'pending' && <button onClick={() => approve(p.id)} className="btn btn-success py-2 px-3"><i className="fa-solid fa-check"></i></button>}
+                      <button onClick={() => toggleStatus(p.id, p.status)} className={`btn ${p.status === 'approved' ? 'btn-danger' : 'btn-success'} py-2 px-3`}>
+                        <i className={`fa-solid ${p.status === 'approved' ? 'fa-ban' : 'fa-check'}`}></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const BookingsPage = () => (
+    <div className="space-y-6 anim-fade">
+      <h1 className="text-2xl font-bold">Bookings ({bookings.length})</h1>
+      <div className="card overflow-hidden">
+        <table>
+          <thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            {bookings.slice(0, 20).map(b => (
+              <tr key={b.id}>
+                <td className="font-mono text-xs">{b.id?.slice(-8)}</td>
+                <td>{users.find(u => u.id === b.userId)?.name || 'Customer'}</td>
+                <td>{b.serviceName}</td>
+                <td>{b.date} {b.time}</td>
+                <td className="font-bold text-green-600">€{b.price || 0}</td>
+                <td><span className={`badge ${b.status === 'completed' ? 'badge-success' : b.status === 'pending' ? 'badge-warning' : 'badge-info'}`}>{b.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const FinancePage = () => {
+    const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.price || 0), 0);
+    const transactions = JSON.parse(localStorage.getItem('gb_transactions') || '[]');
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Finance & Payments</h1>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="gradient-success rounded-2xl p-6 text-white">
+            <p className="text-sm opacity-80">Total Revenue</p>
+            <p className="text-3xl font-bold mt-1">€{totalRevenue}</p>
+          </div>
+          <div className="gradient-info rounded-2xl p-6 text-white">
+            <p className="text-sm opacity-80">Transactions</p>
+            <p className="text-3xl font-bold mt-1">{transactions.length}</p>
+          </div>
+          <div className="gradient-warning rounded-2xl p-6 text-white">
+            <p className="text-sm opacity-80">Bookings</p>
+            <p className="text-3xl font-bold mt-1">{bookings.length}</p>
+          </div>
+        </div>
+        <div className="card p-6">
+          <h2 className="font-bold mb-4">Recent Transactions</h2>
+          <div className="space-y-2">
+            {transactions.slice(0, 10).map(t => (
+              <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="font-medium text-sm">{t.description}</p>
+                  <p className="text-xs text-gray-500">{new Date(t.createdAt).toLocaleString()}</p>
+                </div>
+                <p className={`font-bold ${t.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>{t.amount > 0 ? '+' : ''}€{Math.abs(t.amount)}</p>
+              </div>
+            ))}
+            {transactions.length === 0 && <p className="text-center text-gray-500 py-8">No transactions yet</p>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const NotificationsPage = () => {
+    const send = () => {
+      if (!notifTitle || !notifMessage) { toast('Fill all fields', 'error'); return; }
+      let targets = [];
+      if (notifTarget === 'all') targets = users;
+      else if (notifTarget === 'customers') targets = users.filter(u => u.role === 'user');
+      else targets = providers;
+      
+      targets.forEach(t => {
+        DB.addNotification({ userId: t.userId || t.id, providerId: t.id, type: 'announcement', title: notifTitle, message: notifMessage });
+      });
+      
+      toast(`Notification sent to ${targets.length} users!`);
+      setNotifTitle(''); setNotifMessage('');
+    };
+
+    return (
+      <div className="space-y-6 anim-fade">
+        <h1 className="text-2xl font-bold">Push Notifications</h1>
+        <div className="card p-6">
+          <h2 className="font-bold mb-4">Send Notification</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Target Audience</label>
+              <select value={notifTarget} onChange={(e) => setNotifTarget(e.target.value)} className="input">
+                <option value="all">All Users</option>
+                <option value="customers">Customers Only</option>
+                <option value="providers">Providers Only</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Title</label>
+              <input type="text" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="Notification title" className="input" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Message</label>
+              <textarea value={notifMessage} onChange={(e) => setNotifMessage(e.target.value)} placeholder="Notification message..." rows="3" className="input resize-none" />
+            </div>
+            <button onClick={send} className="btn btn-primary"><i className="fa-solid fa-paper-plane"></i>Send Notification</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard': return <DashboardPage />;
+      case 'appearance': return <AppearancePage />;
+      case 'features': return <FeaturesPage />;
+      case 'navigation': return <NavigationPage />;
+      case 'categories': return <CategoriesPage />;
+      case 'services': return <ServicesPage />;
+      case 'users': return <UsersPage />;
+      case 'providers': return <ProvidersPage />;
+      case 'bookings': return <BookingsPage />;
+      case 'finance': return <FinancePage />;
+      case 'notifications': return <NotificationsPage />;
+      default: return <DashboardPage />;
+    }
+  };
+
+  return (
+    <div className="flex h-full">
+      <div className={`sidebar h-full flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+        <div className="p-5 flex items-center gap-3">
+          <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shrink-0">
+            <i className="fa-solid fa-spa text-white"></i>
+          </div>
+          {sidebarOpen && <span className="text-xl font-bold text-white">GoBeauty</span>}
+        </div>
+        
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          {menuItems.map(item => (
+            <button key={item.id} onClick={() => setCurrentPage(item.id)} className={`sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-1 text-left transition-all ${currentPage === item.id ? 'active text-white' : 'text-gray-400 hover:text-white'}`}>
+              <i className={`fa-solid ${item.icon} w-5 text-center`}></i>
+              {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
+            </button>
+          ))}
+        </nav>
+        
+        <div className="p-3 border-t border-white/10">
+          <button onClick={onLogout} className="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 transition-all">
+            <i className="fa-solid fa-right-from-bracket w-5 text-center"></i>
+            {sidebarOpen && <span className="font-medium text-sm">Logout</span>}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+              <i className="fa-solid fa-bars text-gray-600"></i>
+            </button>
+            <h1 className="text-xl font-bold capitalize">{currentPage}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="index.html" target="_blank" className="btn btn-secondary"><i className="fa-solid fa-external-link"></i>View App</a>
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold">{user.name?.charAt(0) || 'A'}</div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">{renderPage()}</main>
+      </div>
+
+      <div className="fixed bottom-4 right-4 space-y-2 z-50">
+        {toasts.map(t => <Toast key={t.id} message={t.message} type={t.type} onClose={() => setToasts(ts => ts.filter(x => x.id !== t.id))} />)}
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  return user ? <AdminPanel user={user} onLogout={() => setUser(null)} /> : <LoginScreen onLogin={setUser} />;
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

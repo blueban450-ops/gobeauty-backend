@@ -1,0 +1,31 @@
+{
+  "name": "gobeauty-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/app.js",
+    "start": "node src/app.js",
+    "seed": "node src/seed.js",
+    "db:check": "node src/scripts/db-check.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.0.0",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.4",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "socket.io": "^4.7.5",
+    "stripe": "^14.24.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.0.1"
+  }
+}

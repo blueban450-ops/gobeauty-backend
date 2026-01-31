@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "lint": "eslint 'app/**/*.{js,ts,tsx}' --max-warnings=0",
+    "format": "prettier --write 'app/**/*.{js,ts,tsx,json,css,md}'"
+  }
+}

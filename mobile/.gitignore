@@ -1,0 +1,425 @@
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, FlatList, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import api from '../lib/api';
+
+
+
+const INITIAL_FORM = {
+  serviceId: '',
+  customName: '',
+  price: '',
+  durationMin: '',
+  description: '',
+  categoryName: '',
+  homeService: false,
+  salonVisit: false,
+  thumbnail: '',
+  imageFile: null,
+  isActive: true,
+};
+
+function ProviderServiceManageScreen() {
+  const [services, setServices] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [baseServices, setBaseServices] = useState([]);
+
+  useEffect(() => {
+    api.get('/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
+    api.get('/services').then(res => setBaseServices(res.data)).catch(() => setBaseServices([]));
+  }, []);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow media library access to select images.');
+      return;
+    }
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [2, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setForm(f => ({ ...f, imageFile: result.assets[0] }));
+    }
+  };
+
+  const handleSave = () => {
+    if (!form.serviceId) {
+      Alert.alert('Validation', 'Please select a base service.');
+      return;
+    }
+    if (editMode) {
+      setServices(s => s.map(item => item.id === editId ? { ...form, id: editId } : item));
+    } else {
+      setServices(s => [...s, { ...form, id: Date.now().toString() }]);
+    }
+    setShowForm(false);
+    setForm(INITIAL_FORM);
+    setEditMode(false);
+    setEditId(null);
+  };
+
+  const handleEdit = (service) => {
+    setEditMode(true);
+    setEditId(service.id);
+    setForm({ ...service });
+    setShowForm(true);
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>My Services</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => { setShowForm(true); setEditMode(false); setForm(INITIAL_FORM); }}>
+          <Text style={{ color: '#fff', fontSize: 28, fontWeight: 'bold' }}>+</Text>
+        </TouchableOpacity>
+      </View>
+      {services.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No services found. Add your first service!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={services}
+          keyExtractor={item => item.id}
+          numColumns={2}
+          contentContainerStyle={{ padding: 16, paddingBottom: 64 }}
+          renderItem={({ item: service }) => (
+            <View style={{ flex: 1, margin: 8, alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => handleEdit(service)}
+                activeOpacity={0.8}
+                style={{ borderRadius: 16, overflow: 'hidden' }}
+              >
+                {service.imageFile ? (
+                  <Image source={{ uri: service.imageFile.uri }} style={{ width: 120, height: 180, borderRadius: 16, backgroundColor: '#f1f5f9' }} />
+                ) : (
+                  <View style={{ width: 120, height: 180, borderRadius: 16, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#94a3b8' }}>No Image</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1e293b', marginTop: 8 }} numberOfLines={1}>{service.customName || (baseServices.find(bs => bs._id === service.serviceId)?.name || '')}</Text>
+              <Text style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{categories.find(cat => cat._id === service.categoryName)?.name || service.categoryName}</Text>
+              <View style={{ marginTop: 4 }}>
+                {service.isActive !== false ? (
+                  <View style={{ backgroundColor: '#d1fae5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                    <Text style={{ color: '#059669', fontWeight: 'bold', fontSize: 12 }}>Active</Text>
+                  </View>
+                ) : (
+                  <View style={{ backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                    <Text style={{ color: '#6b7280', fontWeight: 'bold', fontSize: 12 }}>Inactive</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+        />
+      )}
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.formTitle}>{editMode ? 'Edit Service' : 'Add Service'}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {categories.map(cat => (
+                  <TouchableOpacity
+                    key={cat._id}
+                    style={[styles.categoryBtn, form.categoryName === cat._id && styles.categoryBtnActive]}
+                    onPress={() => setForm(f => ({ ...f, categoryName: cat._id }))}
+                  >
+                    <Text style={[styles.categoryBtnText, form.categoryName === cat._id && styles.categoryBtnTextActive]}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              {/* Base Service Selector (simple dropdown) */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {baseServices.filter(bs => !form.categoryName || bs.categoryId?._id === form.categoryName).map(bs => (
+                  <TouchableOpacity
+                    key={bs._id}
+                    style={[styles.categoryBtn, form.serviceId === bs._id && styles.categoryBtnActive]}
+                    onPress={() => setForm(f => ({ ...f, serviceId: bs._id }))}
+                  >
+                    <Text style={[styles.categoryBtnText, form.serviceId === bs._id && styles.categoryBtnTextActive]}>{bs.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TextInput
+                style={styles.input}
+                placeholder="Custom Name"
+                value={form.customName}
+                onChangeText={text => setForm(f => ({ ...f, customName: text }))}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Price"
+                value={form.price}
+                onChangeText={text => setForm(f => ({ ...f, price: text }))}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Duration (min)"
+                value={form.durationMin}
+                onChangeText={text => setForm(f => ({ ...f, durationMin: text }))}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.input, { height: 80 }]}
+                placeholder="Description"
+                value={form.description}
+                onChangeText={text => setForm(f => ({ ...f, description: text }))}
+                multiline
+              />
+              <View style={styles.toggleRow}>
+                <TouchableOpacity
+                  style={[styles.toggleButton, form.homeService && styles.toggleButtonActive]}
+                  onPress={() => setForm(f => ({ ...f, homeService: !f.homeService }))}
+                >
+                  <Text style={[styles.toggleLabel, form.homeService && styles.toggleLabelActive]}>Home Service</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.toggleButton, form.salonVisit && styles.toggleButtonActive]}
+                  onPress={() => setForm(f => ({ ...f, salonVisit: !f.salonVisit }))}
+                >
+                  <Text style={[styles.toggleLabel, form.salonVisit && styles.toggleLabelActive]}>Salon Visit</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.thumbnailPicker} onPress={pickImage}>
+                {form.imageFile ? (
+                  <Image source={{ uri: form.imageFile.uri }} style={styles.thumbnailPreview} />
+                ) : (
+                  <View style={styles.thumbnailPlaceholder}>
+                    <Text style={{ color: '#94a3b8' }}>Pick Image</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <View style={styles.toggleRow}>
+                <TouchableOpacity
+                  style={[styles.toggleButton, form.isActive && styles.toggleButtonActive]}
+                  onPress={() => setForm(f => ({ ...f, isActive: !f.isActive }))}
+                >
+                  <Text style={[styles.toggleLabel, form.isActive && styles.toggleLabelActive]}>{form.isActive ? 'Active' : 'Inactive'}</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleSave}
+              >
+                <Text style={styles.primaryButtonText}>{editMode ? 'Save Changes' : 'Add Service'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setShowForm(false)}
+              >
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 60, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
+  addButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#ec4899', justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  listContainer: { padding: 16 },
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 16, fontSize: 16, color: '#94a3b8' },
+  serviceCardVertical: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  serviceThumbnailVertical: {
+    width: 80,
+    height: 120,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    resizeMode: 'cover',
+    backgroundColor: '#f1f5f9',
+  },
+  serviceThumbnailPlaceholderVertical: {
+    width: 80,
+    height: 120,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceContentVertical: {
+    flex: 1,
+    padding: 16,
+  },
+  serviceHeaderVertical: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  serviceName: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
+  serviceCategory: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  serviceActions: { flexDirection: 'row', gap: 8 },
+  iconButton: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
+  serviceDescription: { fontSize: 14, color: '#64748b', marginBottom: 12, lineHeight: 20 },
+  serviceDetails: { flexDirection: 'row', gap: 16, marginBottom: 12 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detailText: { fontSize: 14, fontWeight: '600', color: '#475569' },
+  badgeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, gap: 4 },
+  badgePrimary: { backgroundColor: '#f3e8ff' },
+  badgeInfo: { backgroundColor: '#dbeafe' },
+  badgeWarning: { backgroundColor: '#fef3c7' },
+  badgeText: { fontSize: 12, fontWeight: '600', color: '#475569' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    elevation: 5,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#1e293b',
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  primaryButton: {
+    backgroundColor: '#ec4899',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  secondaryButton: {
+    backgroundColor: '#f1f5f9',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#475569',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  categoryBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  categoryBtnActive: {
+    backgroundColor: '#ec4899',
+    borderColor: '#ec4899',
+  },
+  categoryBtnText: {
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  categoryBtnTextActive: {
+    color: '#fff',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#ec4899',
+    borderColor: '#ec4899',
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  toggleLabelActive: {
+    color: '#fff',
+  },
+  thumbnailPicker: {
+    width: 100,
+    height: 150,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+    marginBottom: 16,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  thumbnailPreview: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  thumbnailPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+});
+
+export default ProviderServiceManageScreen;
+node_modules
