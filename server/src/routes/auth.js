@@ -15,6 +15,7 @@ const signToken = (user, expiresIn = '1h') => jwt.sign({ id: user._id, role: use
 const signRefresh = (user) => jwt.sign({ id: user._id, role: user.role, email: user.email }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-secret', { expiresIn: '30d' });
 
 router.post('/register', asyncHandler(async (req, res) => {
+  console.log('REGISTER ATTEMPT:', req.body);
   const schema = z.object({
     fullName: z.string().min(2),
     email: z.string().email(),
@@ -30,7 +31,10 @@ router.post('/register', asyncHandler(async (req, res) => {
   const body = schema.parse(req.body);
 
   const existing = await User.findOne({ email: body.email.toLowerCase() });
-  if (existing) throw createError(409, 'Email already exists');
+  if (existing) {
+    console.log('REGISTER FAILED: Email already exists:', body.email);
+    throw createError(409, 'Email already exists');
+  }
 
   const hash = await bcrypt.hash(body.password, 10);
   const user = await User.create({ 
@@ -40,6 +44,7 @@ router.post('/register', asyncHandler(async (req, res) => {
     phone: body.phone,
     role: body.role
   });
+  console.log('REGISTER SUCCESS:', user.email, 'role:', user.role);
 
   // If PROVIDER, create Provider profile
   if (body.role === 'PROVIDER') {
@@ -84,20 +89,32 @@ router.post('/register', asyncHandler(async (req, res) => {
 }));
 
 router.post('/login', asyncHandler(async (req, res) => {
+  console.log('LOGIN ATTEMPT:', req.body);
   const schema = z.object({ email: z.string().email(), password: z.string().min(1) });
-  const { email, password } = schema.parse(req.body);
+  let email, password;
+  try {
+    ({ email, password } = schema.parse(req.body));
+  } catch (err) {
+    console.log('LOGIN VALIDATION ERROR:', err);
+    throw createError(400, 'Invalid input');
+  }
   const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user) throw createError(401, 'Invalid credentials');
-  
-  // Check if user is blocked
+  if (!user) {
+    console.log('LOGIN FAILED: User not found:', email);
+    throw createError(401, 'Invalid credentials');
+  }
   if (user.status === 'blocked') {
+    console.log('LOGIN FAILED: User blocked:', email);
     throw createError(403, 'Your account has been blocked. Please contact support.');
   }
-  
   const ok = await bcrypt.compare(password, user.password);
-  if (!ok) throw createError(401, 'Invalid credentials');
+  if (!ok) {
+    console.log('LOGIN FAILED: Wrong password for:', email);
+    throw createError(401, 'Invalid credentials');
+  }
   const token = signToken(user);
   const refresh = signRefresh(user);
+  console.log('LOGIN SUCCESS:', email, 'role:', user.role);
   res.json({ 
     token, 
     refresh, 
