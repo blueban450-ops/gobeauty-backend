@@ -9,66 +9,43 @@ import { Ionicons } from '@expo/vector-icons';
 // Context
 import { AuthProvider, useAuth } from './app/context/AuthContext';
 
-// Screens Imports
+// Screens (Imports same hain)
 import { LoginScreen } from './app/screens/LoginScreen';
 import HomeScreen from './app/screens/HomeScreen';
-import ServiceDetailsScreen from './app/screens/ServiceDetailsScreen';
 import { ProfileScreen } from './app/screens/ProfileScreen';
-import EditProfileScreen from './app/screens/EditProfileScreen';
-import { SearchScreen } from './app/screens/SearchScreen';
 import MapScreen from './app/screens/MapScreen';
-import ProviderDetailNewScreen from './app/screens/ProviderDetailNewScreen';
+import BookingsListScreen from './app/screens/BookingsListScreen';
+import NotificationsScreen from './app/screens/NotificationsScreen';
+import EditProfileScreen from './app/screens/EditProfileScreen';
 import BookingScreen from './app/screens/BookingScreen';
 import BookingConfirmScreen from './app/screens/BookingConfirmScreen';
-import BookingsListScreen from './app/screens/BookingsListScreen';
-import BookingDetailScreen from './app/screens/BookingDetailScreen'; 
-import ProviderDashboardScreen from './app/screens/ProviderDashboardScreen';
-import ProviderRequestsScreen from './app/screens/ProviderRequestsScreen';
-import ProviderServicesScreen from './app/screens/ProviderServicesScreen';
-import ProviderProfileManageScreen from './app/screens/ProviderProfileManageScreen';
-import ProviderMoreScreen from './app/screens/ProviderMoreScreen';
-import ProviderWalletScreen from './app/screens/ProviderWalletScreen';
-import CheckoutScreen from './app/screens/CheckoutScreen';
-import BookingConfirmationPage from './app/screens/BookingConfirmationPage';
+import BookingSummaryScreen from './app/screens/BookingSummaryScreen';
 import BookingConfirmationScreen from './app/screens/BookingConfirmationScreen';
-import NotificationsScreen from './app/screens/NotificationsScreen';
+import BookingConfirmationPage from './app/screens/BookingConfirmationPage';
 
 const queryClient = new QueryClient();
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// --- Navigators Definition ---
+// --- Navigators (Stacks logic same rakhi hai) ---
 const HomeStack = createNativeStackNavigator();
-const BookingsStack = createNativeStackNavigator();
-const ProfileStack = createNativeStackNavigator();
-const ProviderStack = createNativeStackNavigator();
-
 function HomeStackScreen() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-      <HomeStack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
-      <HomeStack.Screen name="Search" component={SearchScreen} />
-      <HomeStack.Screen name="ProviderDetail" component={ProviderDetailNewScreen} />
       <HomeStack.Screen name="Booking" component={BookingScreen} />
       <HomeStack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
-      <HomeStack.Screen name="BookingConfirmationScreen" component={BookingConfirmationScreen} />
+      <HomeStack.Screen name="BookingSummary" component={BookingSummaryScreen} />
+      <HomeStack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
       <HomeStack.Screen name="BookingConfirmationPage" component={BookingConfirmationPage} />
-      <HomeStack.Screen name="CheckoutScreen" component={CheckoutScreen} />
+      <HomeStack.Screen name="ProviderDetail" component={require('./app/screens/ProviderDetailScreen').default} />
+      <HomeStack.Screen name="BookingDetail" component={require('./app/screens/BookingDetailScreen').default} />
     </HomeStack.Navigator>
   );
 }
 
-function BookingsStackScreen() {
-  return (
-    <BookingsStack.Navigator screenOptions={{ headerShown: false }}>
-      <BookingsStack.Screen name="BookingsList" component={BookingsListScreen} />
-      <BookingsStack.Screen name="BookingDetail" component={BookingDetailScreen} />
-      <BookingsStack.Screen name="ProviderDetailNewScreen" component={ProviderDetailNewScreen} />
-    </BookingsStack.Navigator>
-  );
-}
-
+// --- Profile Stack ---
+const ProfileStack = createNativeStackNavigator();
 function ProfileStackScreen() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
@@ -78,50 +55,38 @@ function ProfileStackScreen() {
   );
 }
 
-// --- Custom Floating Button (Common Design) ---
+// --- Custom Button ---
 const CustomTabBarButton = ({ children, onPress, focused, label1, label2, iconName }: any) => {
-  const bounceAnim = useRef(new Animated.Value(8)).current;
-  const glowAnim = useRef(new Animated.Value(0.5)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (focused) {
       Animated.sequence([
-        Animated.timing(bounceAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
-        Animated.timing(bounceAnim, { toValue: 8, duration: 200, useNativeDriver: true }),
-        Animated.timing(bounceAnim, { toValue: 0, duration: 150, useNativeDriver: true })
-      ]).start(() => {
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(glowAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
-            Animated.timing(glowAnim, { toValue: 0.5, duration: 900, useNativeDriver: true })
-          ])
-        ).start();
-      });
-    } else {
-      bounceAnim.setValue(8);
-      glowAnim.setValue(0.5);
+        Animated.timing(bounceAnim, { toValue: -8, duration: 300, useNativeDriver: true }),
+        Animated.timing(bounceAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
     }
   }, [focused]);
 
   return (
     <TouchableOpacity style={styles.centerButtonWrapper} onPress={onPress} activeOpacity={0.9}>
-      <View style={[styles.centerButtonCircle, { backgroundColor: focused ? '#a3a3a3' : '#ec4899' }]}>
-        <View style={styles.centerIconContainer}>
+      <View style={[styles.centerButtonCircle, { backgroundColor: focused ? '#ec4899' : '#a3a3a3' }]}>
+        <Animated.View style={{ transform: [{ translateY: bounceAnim }], alignItems: 'center' }}>
           {focused ? (
-            <Animated.View style={{ opacity: glowAnim, transform: [{ translateY: bounceAnim }], alignItems: 'center' }}>
+            <View style={{ alignItems: 'center' }}>
               <Text style={styles.goText}>{label1}</Text>
               <Text style={styles.beautyText}>{label2}</Text>
-            </Animated.View>
+            </View>
           ) : (
             <Ionicons name={iconName} size={28} color="#fff" />
           )}
-        </View>
+        </Animated.View>
       </View>
     </TouchableOpacity>
   );
 };
 
-// --- Customer Tabs ---
+// --- Tabs Navigator ---
 const CustomerTabs = () => (
   <Tab.Navigator
     screenOptions={{
@@ -129,8 +94,7 @@ const CustomerTabs = () => (
       tabBarShowLabel: false,
       tabBarActiveTintColor: '#ec4899',
       tabBarInactiveTintColor: '#64748b',
-      tabBarStyle: styles.tabBarContainer,
-      tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />,
+      tabBarStyle: styles.tabBarStyle,
     }}
   >
     <Tab.Screen name="home" component={HomeStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} /> }} />
@@ -142,157 +106,80 @@ const CustomerTabs = () => (
         tabBarButton: (props) => <CustomTabBarButton {...props} focused={props.accessibilityState?.selected} label1="GO" label2="beauty" iconName="search" />
       }}
     />
-    <Tab.Screen name="bookings" component={BookingsStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "calendar" : "calendar-outline"} size={26} color={color} /> }} />
+    <Tab.Screen name="bookings" component={BookingsListScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "calendar" : "calendar-outline"} size={26} color={color} /> }} />
     <Tab.Screen name="profile" component={ProfileStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} /> }} />
   </Tab.Navigator>
 );
 
-// --- Provider Tabs (Now matching Customer Style) ---
-const ProviderTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarShowLabel: false,
-      tabBarActiveTintColor: '#ec4899',
-      tabBarInactiveTintColor: '#64748b',
-      tabBarStyle: styles.providerTabBarContainer,
-      tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />,
-    }}
-  >
-    <Tab.Screen name="provider-dashboard" component={ProviderDashboardScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "speedometer" : "speedometer-outline"} size={26} color={color} /></View> }} />
-    <Tab.Screen name="provider-wallet" component={ProviderWalletScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "wallet" : "wallet-outline"} size={26} color={color} /></View> }} />
-    <Tab.Screen 
-      name="provider-services-center" 
-      component={ProviderServicesScreen} 
-      options={{
-        tabBarButton: (props) => <CustomTabBarButton {...props} focused={props.accessibilityState?.selected} label1="PRO" label2="work" iconName="construct" />
-      }}
-    />
-    <Tab.Screen name="provider-requests" component={ProviderRequestsScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "list" : "list-outline"} size={26} color={color} /></View> }} />
-    <Tab.Screen name="provider-more" component={ProviderMoreScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "ellipsis-horizontal-circle" : "ellipsis-horizontal-circle-outline"} size={26} color={color} /></View> }} />
-  </Tab.Navigator>
-);
-
-const ProviderNavigator = () => (
-  <ProviderStack.Navigator screenOptions={{ headerShown: false }}>
-    <ProviderStack.Screen name="ProviderTabs" component={ProviderTabs} />
-    <ProviderStack.Screen name="ProviderProfileManage" component={ProviderProfileManageScreen} />
-  </ProviderStack.Navigator>
-);
-
-// --- Root App Navigator ---
-const AppNavigator = () => {
+// --- Main App Component ---
+function AppNavigator() {
   const { user, loading, login } = useAuth();
   if (loading) return null;
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
-          <Stack.Screen name="Login">{(props) => <LoginScreen {...props} onLogin={login} />}</Stack.Screen>
+          <Stack.Screen name="Login">
+            {(props) => <LoginScreen {...props} onLogin={login} />}
+          </Stack.Screen>
         ) : (
-          <Stack.Screen name="App" component={user?.role === 'PROVIDER' ? ProviderNavigator : CustomerTabs} />
+          <Stack.Screen name="App" component={CustomerTabs} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+}
 
 export default function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <AppNavigator />
-      </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
+// --- Updated Styles ---
 const styles = StyleSheet.create({
-      providerTabBarIcon: {
-        zIndex: 2,
-        elevation: 12,
-        backgroundColor: 'transparent',
-        paddingTop: 10,
-      },
-    providerTabBarIcon: {
-      zIndex: 2,
-      elevation: 12,
-      backgroundColor: 'transparent',
-    },
-  tabBarContainer: {
+  tabBarStyle: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 60 : 45, 
+    bottom: 100, // move tab bar higher
     left: 20,
     right: 20,
-    backgroundColor: 'transparent',
-    elevation: 0,
-    borderTopWidth: 0,
-    height: 70,
-    borderRadius: 35,
-    overflow: 'visible',
-  },
-  providerTabBarContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 80 : 60, 
-    left: 20,
-    right: 20,
-    backgroundColor: 'transparent',
-    elevation: 0,
-    borderTopWidth: 0,
-    height: 70,
-    borderRadius: 35,
-    overflow: 'visible',
-    alignItems: 'flex-end',
-    paddingBottom: 8,
-  },
-  glassyBackground: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', 
-    borderRadius: 35,
-    borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.2)', 
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
+    height: 50, // reduced height
+    borderRadius: 32, // more rounded
+    backgroundColor: '#fff', // revert to solid white
+    borderWidth: 2, // thicker border
+    borderColor: '#D1D5DB', // darker grey for visibility
+    borderTopWidth: 0, 
+    elevation: 8,               // more pronounced shadow
+    shadowColor: '#000',        // Custom shadow jo white corners nahi banayegi
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0, // iOS notch handling
+    justifyContent: 'center',
   },
   centerButtonWrapper: {
-    top: -22, 
+    top: -25,
     justifyContent: 'center',
     alignItems: 'center',
     width: 70,
-    height: 70,
   },
   centerButtonCircle: {
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#ec4899',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
+    borderWidth: 6,
+    borderColor: '#fff', // changed to white for center icon
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
-  centerIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  goText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-  beautyText: {
-    fontSize: 8,
-    color: '#fff',
-    fontWeight: '400',
-    marginTop: -3,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
+  goText: { fontSize: 13, fontWeight: 'bold', color: '#fff' },
+  beautyText: { fontSize: 7, color: '#fff', textTransform: 'uppercase' },
 });

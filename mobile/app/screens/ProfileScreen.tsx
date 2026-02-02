@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import { useNavigation } from '@react-navigation/native';
 
 // Helper to get full avatar URL
 const getAvatarUrl = (avatar: string) => {
@@ -25,6 +26,8 @@ interface ProfileScreenProps {
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, user: propUser }) => {
   const { user: contextUser, logout } = useAuth();
+  // Use navigation prop if passed, otherwise fallback to useNavigation
+  const nav = navigation || useNavigation();
   // Prefer propUser if passed, otherwise contextUser
   const user = propUser || contextUser || {};
   // Always prefer fullName if present
@@ -42,7 +45,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, user: 
         },
         {
           text: 'Logout',
-          onPress: logout,
+          onPress: async () => {
+            await logout();
+            // No manual navigation here; AppNavigator will show LoginScreen automatically
+          },
           style: 'destructive'
         }
       ]
@@ -90,7 +96,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, user: 
           <TouchableOpacity
             key={index}
             style={[styles.menuItem, !item.active && { opacity: 0.5 }]}
-            onPress={() => item.active && navigation.navigate(item.screen)}
+            onPress={() => item.active && nav.navigate(item.screen)}
             disabled={!item.active}
           >
             <View style={styles.menuLeft}>

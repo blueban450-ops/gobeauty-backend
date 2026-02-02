@@ -3,6 +3,8 @@
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Image, ScrollView, PanResponder, Animated, Easing } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from './BookingScreen';
 
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
@@ -110,7 +112,7 @@ const MAP_THEMES = [
 
 const MapScreen = () => {
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList, 'ProviderDetail'>>();
 
   const [location, setLocation] = useState(null);
 
@@ -572,7 +574,7 @@ const MapScreen = () => {
 
                 title={p.name || ''}
 
-                onPress={() => navigation.navigate('home', { screen: 'ProviderDetail', params: { providerId: p._id } })}
+                onPress={() => navigation.navigate('ProviderDetail', { providerId: p._id })}
 
                 tracksViewChanges={true}
 
