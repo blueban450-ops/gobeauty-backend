@@ -7,15 +7,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true
+      "supportsTabletMode": true,
+      "bundleIdentifier": "y",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": ""
       },
       "permissions": [
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
@@ -29,7 +31,7 @@
       "expo-location"
     ],
     "extra": {
-      "apiUrl": "http://192.168.10.7:4000/api",
+      "apiUrl": "https://gobeauty-backend.onrender.com/api",
       "eas": {
         "projectId": "8be0cf1a-5792-47dc-9243-365f86242439"
       }

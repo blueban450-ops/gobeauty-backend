@@ -1,10 +1,10 @@
+
 import axios, { AxiosInstance } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Prefer Expo extra apiUrl; fallbacks cover SDK 54 manifest/manifest2 and a LAN IP.
-// Always use live Render backend for global access
-const apiUrl = 'https://gobeauty-backend.onrender.com/api';
+// Use apiUrl from app.json extra if available, fallback to Render backend
+const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'https://gobeauty-backend.onrender.com/api';
 
 const api: AxiosInstance = axios.create({ baseURL: apiUrl });
 
