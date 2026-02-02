@@ -53,6 +53,7 @@ export const LoginScreen: React.FC<{ onLogin: (token: string, user: User) => voi
       }
       onLogin(data.token, data.user);
     } catch (err: any) {
+      console.log('LOGIN ERROR:', err, err.response?.data);
       Alert.alert('Error', err.response?.data?.error || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

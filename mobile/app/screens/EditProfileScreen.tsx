@@ -121,13 +121,13 @@ const EditProfileScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1e293b" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={{ width: 40 }} /> 
-      </View>
+        <View style={styles.headerSticky}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#1e293b" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <View style={{ width: 40 }} /> 
+        </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -200,7 +200,19 @@ const InputField = ({ label, icon, ...props }: any) => (
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 60, backgroundColor: 'white' },
+  headerSticky: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16, 
+    height: 60, 
+    backgroundColor: 'white', 
+    zIndex: 100, 
+    position: 'relative', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#f1f5f9',
+    paddingTop: Platform.OS === 'ios' ? 18 : 0 // extra for iPhone notch
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b' },
   backBtn: { padding: 8, borderRadius: 12, backgroundColor: '#f1f5f9' },
   scrollContent: { padding: 20, paddingBottom: 50 },
