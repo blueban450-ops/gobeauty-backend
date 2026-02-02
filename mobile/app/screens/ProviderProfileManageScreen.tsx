@@ -147,7 +147,7 @@ export default function ProviderProfileManageScreen() {
       aspect: type === 'avatar' ? [1, 1] : [16, 9],
       quality: 0.8,
     });
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets && result.assets[0]) {
         uploadImage(result.assets[0].uri, type);
     }
   };

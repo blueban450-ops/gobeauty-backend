@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Context
 import { AuthProvider, useAuth } from './app/context/AuthContext';
 
-// Screens Imports (Ensuring they match your file structure)
+// Screens Imports
 import { LoginScreen } from './app/screens/LoginScreen';
 import HomeScreen from './app/screens/HomeScreen';
 import ServiceDetailsScreen from './app/screens/ServiceDetailsScreen';
@@ -27,6 +27,7 @@ import ProviderRequestsScreen from './app/screens/ProviderRequestsScreen';
 import ProviderServicesScreen from './app/screens/ProviderServicesScreen';
 import ProviderProfileManageScreen from './app/screens/ProviderProfileManageScreen';
 import ProviderMoreScreen from './app/screens/ProviderMoreScreen';
+import ProviderWalletScreen from './app/screens/ProviderWalletScreen';
 import CheckoutScreen from './app/screens/CheckoutScreen';
 import BookingConfirmationPage from './app/screens/BookingConfirmationPage';
 import BookingConfirmationScreen from './app/screens/BookingConfirmationScreen';
@@ -77,22 +78,18 @@ function ProfileStackScreen() {
   );
 }
 
-// --- Custom Floating Search Button ---
-// ...existing code...
-
-const CustomTabBarButton = ({ children, onPress, focused }: any) => {
-  const bounceAnim = useRef(new Animated.Value(8)).current; // Start slightly lower
+// --- Custom Floating Button (Common Design) ---
+const CustomTabBarButton = ({ children, onPress, focused, label1, label2, iconName }: any) => {
+  const bounceAnim = useRef(new Animated.Value(8)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     if (focused) {
-      // Bounce up
       Animated.sequence([
         Animated.timing(bounceAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
         Animated.timing(bounceAnim, { toValue: 8, duration: 200, useNativeDriver: true }),
         Animated.timing(bounceAnim, { toValue: 0, duration: 150, useNativeDriver: true })
       ]).start(() => {
-        // Start glow loop after bounce
         Animated.loop(
           Animated.sequence([
             Animated.timing(glowAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
@@ -107,44 +104,16 @@ const CustomTabBarButton = ({ children, onPress, focused }: any) => {
   }, [focused]);
 
   return (
-    <TouchableOpacity
-      style={styles.centerButtonWrapper}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
-      <View style={[styles.centerButtonCircle, { backgroundColor: focused ? '#a3a3a3' : '#ec4899', position: 'relative' }]}> 
-        <View style={{
-          position: 'absolute',
-          left: 0, right: 0, top: 0, bottom: 0,
-          alignItems: 'center', justifyContent: 'center',
-        }}>
+    <TouchableOpacity style={styles.centerButtonWrapper} onPress={onPress} activeOpacity={0.9}>
+      <View style={[styles.centerButtonCircle, { backgroundColor: focused ? '#a3a3a3' : '#ec4899' }]}>
+        <View style={styles.centerIconContainer}>
           {focused ? (
-            <>
-              <Animated.View style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: glowAnim,
-                transform: [{ translateY: bounceAnim }],
-              }}>
-                <Text style={{
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  color: '#fff',
-                  letterSpacing: 2,
-                  textAlign: 'center',
-                }}>GO</Text>
-                <Text style={{
-                  fontSize: 10,
-                  color: '#fff',
-                  fontWeight: '400',
-                  letterSpacing: 1,
-                  marginTop: -6,
-                  textAlign: 'center',
-                }}>beauty</Text>
-              </Animated.View>
-            </>
+            <Animated.View style={{ opacity: glowAnim, transform: [{ translateY: bounceAnim }], alignItems: 'center' }}>
+              <Text style={styles.goText}>{label1}</Text>
+              <Text style={styles.beautyText}>{label2}</Text>
+            </Animated.View>
           ) : (
-            <Ionicons name="search" size={28} color="#fff" />
+            <Ionicons name={iconName} size={28} color="#fff" />
           )}
         </View>
       </View>
@@ -161,10 +130,7 @@ const CustomerTabs = () => (
       tabBarActiveTintColor: '#ec4899',
       tabBarInactiveTintColor: '#64748b',
       tabBarStyle: styles.tabBarContainer,
-      // Glassy transparency support
-      tabBarBackground: () => (
-        <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />
-      ),
+      tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />,
     }}
   >
     <Tab.Screen name="home" component={HomeStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} /> }} />
@@ -173,12 +139,37 @@ const CustomerTabs = () => (
       name="searchNearby" 
       component={MapScreen} 
       options={{
-        tabBarIcon: () => <Ionicons name="search" size={28} color="#fff" />,
-        tabBarButton: (props) => <CustomTabBarButton {...props} focused={props.accessibilityState?.selected} />
+        tabBarButton: (props) => <CustomTabBarButton {...props} focused={props.accessibilityState?.selected} label1="GO" label2="beauty" iconName="search" />
       }}
     />
     <Tab.Screen name="bookings" component={BookingsStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "calendar" : "calendar-outline"} size={26} color={color} /> }} />
     <Tab.Screen name="profile" component={ProfileStackScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} /> }} />
+  </Tab.Navigator>
+);
+
+// --- Provider Tabs (Now matching Customer Style) ---
+const ProviderTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: false,
+      tabBarShowLabel: false,
+      tabBarActiveTintColor: '#ec4899',
+      tabBarInactiveTintColor: '#64748b',
+      tabBarStyle: styles.providerTabBarContainer,
+      tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />,
+    }}
+  >
+    <Tab.Screen name="provider-dashboard" component={ProviderDashboardScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "speedometer" : "speedometer-outline"} size={26} color={color} /></View> }} />
+    <Tab.Screen name="provider-wallet" component={ProviderWalletScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "wallet" : "wallet-outline"} size={26} color={color} /></View> }} />
+    <Tab.Screen 
+      name="provider-services-center" 
+      component={ProviderServicesScreen} 
+      options={{
+        tabBarButton: (props) => <CustomTabBarButton {...props} focused={props.accessibilityState?.selected} label1="PRO" label2="work" iconName="construct" />
+      }}
+    />
+    <Tab.Screen name="provider-requests" component={ProviderRequestsScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "list" : "list-outline"} size={26} color={color} /></View> }} />
+    <Tab.Screen name="provider-more" component={ProviderMoreScreen} options={{ tabBarIcon: ({ color, focused }) => <View style={styles.providerTabBarIcon}><Ionicons name={focused ? "ellipsis-horizontal-circle" : "ellipsis-horizontal-circle-outline"} size={26} color={color} /></View> }} />
   </Tab.Navigator>
 );
 
@@ -187,24 +178,6 @@ const ProviderNavigator = () => (
     <ProviderStack.Screen name="ProviderTabs" component={ProviderTabs} />
     <ProviderStack.Screen name="ProviderProfileManage" component={ProviderProfileManageScreen} />
   </ProviderStack.Navigator>
-);
-
-const ProviderTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarShowLabel: false,
-      tabBarActiveTintColor: '#ec4899',
-      tabBarInactiveTintColor: '#94a3b8',
-      tabBarStyle: styles.tabBarContainer,
-      tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.glassyBackground]} />,
-    }}
-  >
-    <Tab.Screen name="provider-dashboard" component={ProviderDashboardScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "speedometer" : "speedometer-outline"} size={24} color={color} /> }} />
-    <Tab.Screen name="provider-requests" component={ProviderRequestsScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "list" : "list-outline"} size={24} color={color} /> }} />
-    <Tab.Screen name="provider-services" component={ProviderServicesScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "construct" : "construct-outline"} size={24} color={color} /> }} />
-    <Tab.Screen name="provider-more" component={ProviderMoreScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "ellipsis-horizontal-circle" : "ellipsis-horizontal-circle-outline"} size={24} color={color} /> }} />
-  </Tab.Navigator>
 );
 
 // --- Root App Navigator ---
@@ -235,52 +208,91 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+      providerTabBarIcon: {
+        zIndex: 2,
+        elevation: 12,
+        backgroundColor: 'transparent',
+        paddingTop: 10,
+      },
+    providerTabBarIcon: {
+      zIndex: 2,
+      elevation: 12,
+      backgroundColor: 'transparent',
+    },
   tabBarContainer: {
-     position: 'absolute',
-    bottom: 60,
-     left: 20,
-     right: 20,
-     backgroundColor: 'transparent',
-     elevation: 0,
-     borderTopWidth: 0,
-     height: 70,
-     borderRadius: 30,
-     overflow: 'visible',
-     flexDirection: 'row',
-     alignItems: 'center',
-     justifyContent: 'space-between',
-     paddingHorizontal: 18,
-     paddingBottom: 6,
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 60 : 45, 
+    left: 20,
+    right: 20,
+    backgroundColor: 'transparent',
+    elevation: 0,
+    borderTopWidth: 0,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'visible',
+  },
+  providerTabBarContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 80 : 60, 
+    left: 20,
+    right: 20,
+    backgroundColor: 'transparent',
+    elevation: 0,
+    borderTopWidth: 0,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'visible',
+    alignItems: 'flex-end',
+    paddingBottom: 8,
   },
   glassyBackground: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)', // White transparency for glass
-    borderRadius: 30,
-    borderWidth: 0.5,
-    borderColor: '#ec4899', // Pink border for tab bar
-    // Shadow for depth
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+    borderRadius: 35,
+    borderWidth: 1.5,
+    borderColor: 'rgba(236, 72, 153, 0.2)', 
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowRadius: 15,
   },
   centerButtonWrapper: {
-    top: -14, // Slightly less negative to avoid cutting
+    top: -22, 
     justifyContent: 'center',
     alignItems: 'center',
+    width: 70,
+    height: 70,
   },
   centerButtonCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#64748b', 
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 10,
     shadowColor: '#ec4899',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     borderWidth: 4,
     borderColor: '#FFFFFF',
+  },
+  centerIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
+  beautyText: {
+    fontSize: 8,
+    color: '#fff',
+    fontWeight: '400',
+    marginTop: -3,
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
 });

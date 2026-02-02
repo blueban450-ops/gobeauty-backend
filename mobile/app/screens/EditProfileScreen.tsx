@@ -114,7 +114,7 @@ const EditProfileScreen = ({ navigation }: any) => {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets && result.assets[0]) {
       setAvatar(result.assets[0].uri);
     }
   };

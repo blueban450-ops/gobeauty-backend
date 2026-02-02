@@ -178,7 +178,7 @@ export default function ProviderProfileScreen() {
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         uploadImage(result.assets[0].uri, type);
       }
     } catch (error) {
