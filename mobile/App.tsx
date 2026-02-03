@@ -22,6 +22,13 @@ import BookingConfirmScreen from './app/screens/BookingConfirmScreen';
 import BookingSummaryScreen from './app/screens/BookingSummaryScreen';
 import BookingConfirmationScreen from './app/screens/BookingConfirmationScreen';
 import BookingConfirmationPage from './app/screens/BookingConfirmationPage';
+// Provider Screens
+import ProviderDashboardScreen from './app/screens/ProviderDashboardScreen';
+import ProviderProfileManageScreen from './app/screens/ProviderProfileManageScreen';
+import ProviderRequestsScreen from './app/screens/ProviderRequestsScreen';
+import ProviderServiceManageScreen from './app/screens/ProviderServiceManageScreen';
+import ProviderWalletScreen from './app/screens/ProviderWalletScreen';
+import ProviderMoreScreen from './app/screens/ProviderMoreScreen';
 
 const queryClient = new QueryClient();
 const Stack = createNativeStackNavigator();
@@ -86,7 +93,7 @@ const CustomTabBarButton = ({ children, onPress, focused, label1, label2, iconNa
   );
 };
 
-// --- Tabs Navigator ---
+// --- Customer Tabs ---
 const CustomerTabs = () => (
   <Tab.Navigator
     screenOptions={{
@@ -111,7 +118,63 @@ const CustomerTabs = () => (
   </Tab.Navigator>
 );
 
+// --- Provider Tabs ---
+const ProviderTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: false,
+      tabBarShowLabel: false,
+      tabBarActiveTintColor: '#ec4899',
+      tabBarInactiveTintColor: '#64748b',
+      tabBarStyle: styles.tabBarStyle,
+    }}
+  >
+    <Tab.Screen name="dashboard" component={ProviderDashboardScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "grid" : "grid-outline"} size={26} color={color} /> }} />
+    <Tab.Screen name="requests" component={ProviderRequestsScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "list" : "list-outline"} size={26} color={color} /> }} />
+    <Tab.Screen
+      name="services"
+      component={ProviderServiceManageScreen}
+      options={{
+        tabBarButton: (props) => {
+          const iconAnim = useRef(new Animated.Value(1)).current;
+          const handlePress = (e) => {
+            Animated.sequence([
+              Animated.timing(iconAnim, {
+                toValue: 1.25,
+                duration: 120,
+                useNativeDriver: true,
+              }),
+              Animated.spring(iconAnim, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true,
+              }),
+            ]).start();
+            if (props.onPress) props.onPress(e);
+          };
+          return (
+            <TouchableOpacity
+              style={styles.centerButtonWrapper}
+              onPress={handlePress}
+              activeOpacity={0.9}
+            >
+              <View style={[styles.centerButtonCircle, { backgroundColor: props.accessibilityState?.selected ? '#ec4899' : '#a3a3a3', justifyContent: 'center', alignItems: 'center' }]}> 
+                <Animated.View style={{ transform: [{ scale: iconAnim }] }}>
+                  <Ionicons name="cut" size={32} color="#fff" />
+                </Animated.View>
+              </View>
+            </TouchableOpacity>
+          );
+        },
+      }}
+    />
+    <Tab.Screen name="wallet" component={ProviderWalletScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "wallet" : "wallet-outline"} size={26} color={color} /> }} />
+    <Tab.Screen name="more" component={ProviderMoreScreen} options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "ellipsis-horizontal" : "ellipsis-horizontal-outline"} size={26} color={color} /> }} />
+  </Tab.Navigator>
+);
+
 // --- Main App Component ---
+
 function AppNavigator() {
   const { user, loading, login } = useAuth();
   if (loading) return null;
@@ -122,9 +185,13 @@ function AppNavigator() {
           <Stack.Screen name="Login">
             {(props) => <LoginScreen {...props} onLogin={login} />}
           </Stack.Screen>
+        ) : user.role === 'PROVIDER' ? (
+          <Stack.Screen name="ProviderApp" component={ProviderTabs} />
         ) : (
           <Stack.Screen name="App" component={CustomerTabs} />
         )}
+        {/* Provider profile manage screen (for navigation from More tab) */}
+        <Stack.Screen name="ProviderProfileManage" component={ProviderProfileManageScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -149,7 +216,7 @@ const styles = StyleSheet.create({
     right: 20,
     height: 50, // reduced height
     borderRadius: 32, // more rounded
-    backgroundColor: '#fff', // revert to solid white
+    backgroundColor: 'rgba(255,255,255,0.6)', // glassy white
     borderWidth: 2, // thicker border
     borderColor: '#D1D5DB', // darker grey for visibility
     borderTopWidth: 0, 
@@ -160,6 +227,8 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     paddingBottom: Platform.OS === 'ios' ? 20 : 0, // iOS notch handling
     justifyContent: 'center',
+    // Glass effect for iOS (blur)
+    ...(Platform.OS === 'ios' ? { backdropFilter: 'blur(16px)' } : {}),
   },
   centerButtonWrapper: {
     top: -25,

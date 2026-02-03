@@ -172,7 +172,7 @@ export default function ProviderProfileScreen() {
   const pickImage = async (type: 'avatar' | 'cover') => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         allowsEditing: true,
         aspect: type === 'avatar' ? [1, 1] : [16, 9],
         quality: 0.8,

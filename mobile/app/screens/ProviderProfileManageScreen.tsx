@@ -38,7 +38,10 @@ interface FormData {
   facebook: string;
 }
 
+import { useNavigation, CommonActions } from '@react-navigation/native';
+
 export default function ProviderProfileManageScreen() {
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { logout } = useAuth();
 
@@ -142,12 +145,12 @@ export default function ProviderProfileManageScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: type === 'avatar' ? [1, 1] : [16, 9],
       quality: 0.8,
     });
-    if (!result.canceled && result.assets && result.assets[0]) {
+    if (!result.canceled && result.assets[0]) {
         uploadImage(result.assets[0].uri, type);
     }
   };
@@ -188,6 +191,12 @@ export default function ProviderProfileManageScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 40, left: 20, zIndex: 10, backgroundColor: '#fff', borderRadius: 20, padding: 6, elevation: 3 }}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#ec4899" />
+      </TouchableOpacity>
       <View style={styles.coverContainer}>
         <TouchableOpacity style={styles.coverImageContainer} onPress={() => pickImage('cover')}>
           {coverImage ? <Image source={{ uri: coverImage }} style={styles.coverImage} /> : <View style={styles.coverPlaceholder}><Ionicons name="images" size={40} color="#cbd5e1" /><Text>Add Cover Photo</Text></View>}
@@ -267,7 +276,18 @@ export default function ProviderProfileManageScreen() {
           {updateMutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save Profile</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={() => Alert.alert('Logout', 'Are you sure?', [{text:'No'},{text:'Yes', onPress: logout}])}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => Alert.alert('Logout', 'Are you sure?', [
+          {text:'No'},
+          {text:'Yes', onPress: async () => {
+            await logout();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            );
+          }}
+        ])}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
